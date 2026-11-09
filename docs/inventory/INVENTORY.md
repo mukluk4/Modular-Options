@@ -26,7 +26,7 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `merchant-buckets` | **Merchant bucket gates.** Merchant rows gated by data buckets on regular and alternate currency merchants (used by tier gear and other unlocks). | — | EQEmu + NMS (runs on EQEmu today) | 32 lines, 3 files | 0 |
 | `core-fixes` | **NMS bug fixes.** Fixes any NMS server wants: suppressed-buff dispel crash, target-of-target procs, zone-state loot tables, zone objects with no map floor, server buffs on zone boot, login lockout. | — | EQEmu + NMS | 21 lines, 5 files | 0 |
 | `platform` | **Platform.** Docker packaging, nightly backups, VoidPatcher, content snapshot tools, Linux build fixes, client spell ID limit. | — | EQEmu + NMS, NMS-only parts | 20 lines, 3 files | 27 |
-| `dynamic-items` | **Dynamic items.** Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge. | — | EQEmu + NMS (runs on EQEmu today) | 1774 lines, 21 files | 21 |
+| `dynamic-items` | **Dynamic items.** Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge, and the Hailstone client add-on that shows them. | — | EQEmu + NMS (runs on EQEmu today) | 1774 lines, 21 files | 24 |
 | `gear-sets` | **Armor and gear sets.** Armor set bonuses (stat and spell-granting), class set textures and icons, #gear saved gear sets. | `dynamic-items` | EQEmu + NMS (runs on EQEmu today) | 433 lines, 11 files | 8 |
 | `glamour` | **Glamour vendors.** Glamour ornament vendors with tint sets; merchants refuse glamour resale. | — | EQEmu + NMS | 8 lines, 2 files | 7 |
 | `greater-rifts` | **Greater Rifts.** Rift scripts, Guardians, pylons, champion affixes, rift zones, deepest-clear bucket, completion rewards, crash recovery. | — | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 26 |
@@ -34,7 +34,7 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `raid-portal` | **Raid portal.** Rift Raids: raid tiers, boss roster, raid instances (version 50), Prism Augmenter. | `greater-rifts` | EQEmu + NMS | 0 lines, 0 files | 60 |
 | `the-void` | **The Void hub.** The Void opened as a hub: gate, waypoint, vendors, soulbinder, arrival point. | — | EQEmu + NMS, NMS-only parts | 0 lines, 0 files | 7 |
 | `vault` | **Nautilus Vault.** Item vault, vault bags, proc locker, clicky buffs kept while vaulted. | — | EQEmu + NMS (runs on EQEmu today) | 506 lines, 15 files | 4 |
-| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying. | — | EQEmu + NMS (runs on EQEmu today) | 144 lines, 11 files | 2 |
+| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying, and the Hailstone personal loot window. | `vault` | EQEmu + NMS (runs on EQEmu today) | 212 lines, 12 files | 2 |
 | `chronal-tribute` | **Chronal Tributes.** Tribute that scales with the rift band. | `greater-rifts` | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 2 |
 | `paragon-aa` | **Paragon AAs.** Toggleable Paragon AAs. | — | EQEmu + NMS (runs on EQEmu today) | 30 lines, 5 files | 3 |
 | `triptych-aa` | **Triptych AA fixes.** Stacking spell damage AAs, Rogue and Ranger crits, buyable Glyphs, Throwing fixes. | — | EQEmu + NMS | 131 lines, 9 files | 0 |
@@ -46,7 +46,6 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `platinum-economy` | **Platinum economy.** Echo of Memory services paid in platinum, platinum AA sinks. | — | EQEmu + NMS, NMS-only parts | 372 lines, 9 files | 2 |
 | `content-fixes` | **Content fixes.** Zone and NPC changes: Xeru and Sanctus Seru, Echo spells, Gut Punch, Bazaar tradeskill stations. | — | EQEmu + NMS | 0 lines, 0 files | 7 |
 | `no-level-reqs` | **No item level requirements.** Every item usable at any level: required and recommended levels cleared. Database only. | — | EQEmu + NMS | 0 lines, 0 files | 0 |
-| `hailstone` | **Hailstone client support.** Loot offers, vault bags and dynamic items for the Hailstone client. | `vault`, `loot-offers`, `dynamic-items` | EQEmu + NMS | 68 lines, 6 files | 3 |
 | `docs` | **Documentation.** Player's Guide, README, design specs. | — | NMS only | 47 lines, 1 files | 3 |
 
 ## Modules
@@ -115,17 +114,20 @@ New files (27):
 
 ### `dynamic-items`: Dynamic items
 
-Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge.
+Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge, and the Hailstone client add-on that shows them.
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
 Core edits (lines added per file): `common/database/database_update_manifest_custom.cpp` 1523, `zone/client_packet.cpp` 93, `common/item_instance.cpp` 29, `common/item_instance.h` 17, `zone/bonuses.cpp` 17, `zone/client.h` 16, `zone/effects.cpp` 16, `common/ruletypes.h` 15, `zone/client_mods.cpp` 9, `zone/main.cpp` 6, `zone/CMakeLists.txt` 5, `common/patches/rof.cpp` 3, `common/patches/rof2.cpp` 3, `common/patches/sod.cpp` 3, `common/patches/sof.cpp` 3, `common/patches/titanium.cpp` 3, `common/patches/uf.cpp` 3, `zone/client.cpp` 3, `zone/command.cpp` 3, `zone/command.h` 3, `common/CMakeLists.txt` 1
 
-New files (21):
+New files (24):
 
 - `common/dynamic_item_structs.h`
 - `docs/dynamic_items/README.md`
 - `docs/dynamic_items/USER_GUIDE.md`
+- `utils/hailstone-dynitems/README.md`
+- `utils/hailstone-dynitems/dynitems/init.lua`
+- `utils/hailstone-dynitems/dynitems/ui/modern/dynitems.lua`
 - `utils/scripts/dynamic_items/2026_10_22_berserker_no_1h.sql`
 - `utils/scripts/dynamic_items/2026_10_22_heroics_base_rebalance.sql`
 - `utils/scripts/dynamic_items/2026_10_22_hybrid_mana_endurance.sql`
@@ -304,11 +306,13 @@ New files (4):
 
 ### `loot-offers`: Personal loot offers
 
-/nmsloot keep and sell rules, solo and group personal loot, group corpse emptying.
+/nmsloot keep and sell rules, solo and group personal loot, group corpse emptying, and the Hailstone personal loot window.
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Core edits (lines added per file): `zone/corpse.cpp` 45, `common/eq_packet_structs.h` 41, `zone/loot.cpp` 20, `zone/attack.cpp` 18, `zone/client_packet.cpp` 7, `zone/corpse.h` 4, `common/emu_oplist.h` 2, `common/ruletypes.h` 2, `utils/patches/patch_RoF2.conf` 2, `zone/npc.h` 2, `zone/client_packet.h` 1
+Needs: `vault`
+
+Core edits (lines added per file): `common/eq_packet_structs.h` 91, `zone/corpse.cpp` 45, `zone/loot.cpp` 20, `zone/attack.cpp` 18, `zone/client_packet.cpp` 13, `common/emu_oplist.h` 6, `utils/patches/patch_RoF2.conf` 6, `zone/corpse.h` 4, `zone/client.h` 3, `common/ruletypes.h` 2, `zone/client_packet.h` 2, `zone/npc.h` 2
 
 New files (2):
 
@@ -436,22 +440,6 @@ New files (7):
 Every item usable at any level: required and recommended levels cleared. Database only.
 
 Bases: EQEmu + NMS
-
-### `hailstone`: Hailstone client support
-
-Loot offers, vault bags and dynamic items for the Hailstone client.
-
-Bases: EQEmu + NMS
-
-Needs: `vault`, `loot-offers`, `dynamic-items`
-
-Core edits (lines added per file): `common/eq_packet_structs.h` 50, `zone/client_packet.cpp` 6, `common/emu_oplist.h` 4, `utils/patches/patch_RoF2.conf` 4, `zone/client.h` 3, `zone/client_packet.h` 1
-
-New files (3):
-
-- `utils/hailstone-dynitems/README.md`
-- `utils/hailstone-dynitems/dynitems/init.lua`
-- `utils/hailstone-dynitems/dynitems/ui/modern/dynitems.lua`
 
 ### `docs`: Documentation
 

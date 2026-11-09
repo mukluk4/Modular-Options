@@ -1,0 +1,10 @@
+{
+	"name": "paragon-aa",
+	"title": "Paragon AAs",
+	"description": "Twelve endless-style AA lines for capped characters: hit points, mana, endurance, armor class, attack, melee damage, and the six heroic stats. Heroic stats from AAs are applied server side, since the client has no spell effect for them.",
+	"bases": ["eqemu", "nms"],
+	"sources": {
+		"zone": ["nms_paragon.cpp"],
+		"zone_headers": ["nms_paragon.h"]
+	}
+}

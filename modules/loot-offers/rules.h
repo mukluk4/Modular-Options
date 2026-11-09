@@ -1,0 +1,4 @@
+RULE_BOOL(Custom, NmsLootOffers, false, "/nmsloot (needs the NMS client add-on): on an NPC's death, roll its loot again for the killer and each group or raid member in the zone and send it to their /nmsloot window. Keep/Sell/Tribute/Bank/Vault/Destroy/Pass from anywhere in the zone. Off = corpse loot only")
+RULE_INT(Custom, NmsLootOfferExpireSeconds, 300, "Seconds before an unclaimed /nmsloot offer expires")
+RULE_BOOL(Custom, NmsLootEmptyGroupCorpse, true, "With /nmsloot offers going to 2 or more players, the corpse's loot table items are removed (quest-added items stay) and an emptied corpse decays at once. A lone player keeps the corpse loot too, unless NmsLootEmptySoloCorpse is on")
+RULE_BOOL(Custom, NmsLootEmptySoloCorpse, false, "With /nmsloot offers going to a lone player, the corpse's loot table items are removed too, so only the personal roll remains (quest-added items stay)")

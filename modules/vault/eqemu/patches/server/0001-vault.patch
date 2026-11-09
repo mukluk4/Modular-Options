@@ -1,0 +1,493 @@
+--- a/common/inventory_profile.cpp
++++ b/common/inventory_profile.cpp
+@@ -250,6 +250,16 @@
+ int16 EQ::InventoryProfile::PushCursor(const ItemInstance &inst) {
+ 	m_cursor.push(inst.Clone());
+ 	return invslot::slotCursor;
++}
++
++int16 EQ::InventoryProfile::PushCursorFront(const ItemInstance &inst) {
++	m_cursor.push_front(inst.Clone());
++	return invslot::slotCursor;
++}
++
++EQ::ItemInstance* EQ::InventoryProfile::PopCursorBack()
++{
++	return m_cursor.pop_back();
+ }
+ 
+ EQ::ItemInstance* EQ::InventoryProfile::GetCursorItem() {
+--- a/common/inventory_profile.h
++++ b/common/inventory_profile.h
+@@ -125,6 +125,12 @@
+ 		// Add item to cursor queue
+ 		int16 PushCursor(const ItemInstance& inst);
+ 
++		// Add item to the front of the cursor queue (restores a cursor item a failed move took)
++		int16 PushCursorFront(const ItemInstance& inst);
++
++		// Remove (and return) the most recently pushed cursor item
++		ItemInstance* PopCursorBack();
++
+ 		// Get cursor item in front of queue
+ 		ItemInstance* GetCursorItem();
+ 
+--- a/common/item_instance.cpp
++++ b/common/item_instance.cpp
+@@ -22,6 +22,7 @@
+ #include "common/rulesys.h"
+ #include "common/shareddb.h"
+ #include "common/strings.h"
++#include "common/nms_vault_item.h"
+ 
+ #include <climits>
+ 
+@@ -904,7 +905,7 @@
+ 	}
+ 	/*if (m_ornamentidfile) // not implemented
+ 		return false;*/
+-	if (m_attuned) {
++	if (m_attuned || NmsVaultIsArmoryItem(m_item->ID)) {
+ 		return false;
+ 	}
+ 
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -33,6 +33,7 @@
+ #include "zone/string_ids.h"
+ #include "zone/water_map.h"
+ #include "zone/worldserver.h"
++#include "zone/nms_vault.h"
+ #include "zone/zone.h"
+ 
+ extern QueryServ* QServ;
+@@ -5037,6 +5038,18 @@
+ 	}
+ 	if (!weapon)
+ 		return;
++
++	const EQ::ItemData *locker_item = nullptr;
++	if (IsClient()) {
++		locker_item = NmsVaultProcItem(CastToClient(), hand);
++		if (locker_item && !RuleB(Custom, ProcLockerStacks)) {
++			// The locker item replaces the held weapon's proc and suppresses its aug procs.
++			// Stacking mode instead lets all three roll.
++			weapon = locker_item;
++			inst = nullptr;
++			locker_item = nullptr;
++		}
++	}
+ 	uint16 skillinuse = 28;
+ 	int ourlevel = GetLevel();
+ 	float ProcBonus = static_cast<float>(aabonuses.ProcChanceSPA +
+@@ -5111,6 +5124,58 @@
+ 			}
+ 		}
+ 	}
++	// Nautilus Vault Proc Locker: independent rolls so the locker (its innate proc and
++	// its augs) procs alongside the held weapon's innate proc and aug procs
++	// (Custom:ProcLockerStacks). Same chance formula as a weapon proc, including the
++	// secondary-hand halving already in ProcChance. Ranged is covered: archery reaches
++	// here with hand = slotRange, rolling the slot-83 locker item and its augs.
++	if (IsClient() && locker_item) {
++		bool locker_proced = false;
++
++		if (locker_item->Proc.Type == EQ::item::ItemEffectCombatProc && IsValidSpell(locker_item->Proc.Effect)) {
++			float LPC = ProcChance * (100.0f + static_cast<float>(locker_item->ProcRate)) / 100.0f;
++			if (zone->random.Roll(LPC)) {
++				if (locker_item->Proc.Level2 > ourlevel) {
++					LogCombat("Proc Locker item ([{}]) rolled but requires level [{}]", locker_item->Name, locker_item->Proc.Level2);
++				}
++				else {
++					LogCombat("Proc Locker item ([{}]) procing spell [{}] on [{}]", locker_item->Name, locker_item->Proc.Effect, on->GetName());
++					ExecWeaponProc(nullptr, locker_item->Proc.Effect, on);
++					locker_proced = true;
++				}
++			}
++		}
++
++		// Mirror the stock weapon gating for the locker's own augs
++		if (!RuleB(Combat, OneProcPerWeapon)) {
++			locker_proced = false;
++		}
++
++		if (!locker_proced) {
++			const EQ::ItemData *locker_augs[6] = {};
++			const int aug_count = NmsVaultProcAugs(CastToClient(), hand, locker_augs, 6);
++			for (int i = 0; i < aug_count; ++i) {
++				const EQ::ItemData *aug = locker_augs[i];
++				if (aug->Proc.Type != EQ::item::ItemEffectCombatProc || !IsValidSpell(aug->Proc.Effect)) {
++					continue;
++				}
++				float APC = ProcChance * (100.0f + static_cast<float>(aug->ProcRate)) / 100.0f;
++				if (zone->random.Roll(APC)) {
++					if (aug->Proc.Level2 > ourlevel) {
++						LogCombat("Proc Locker aug ([{}]) rolled but requires level [{}]", aug->Name, aug->Proc.Level2);
++					}
++					else {
++						LogCombat("Proc Locker aug ([{}]) procing spell [{}] on [{}]", aug->Name, aug->Proc.Effect, on->GetName());
++						ExecWeaponProc(nullptr, aug->Proc.Effect, on);
++						if (RuleB(Combat, OneProcPerWeapon)) {
++							break;
++						}
++					}
++				}
++			}
++		}
++	}
++
+ 	// TODO: Powersource procs -- powersource procs are from augs so shouldn't need anything extra
+ 
+ 	return;
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -25,6 +25,7 @@
+ #include "zone/mob.h"
+ #include "zone/bot.h"
+ #include "zone/quest_parser_collection.h"
++#include "zone/nms_vault.h"
+ 
+ #include <cstdlib>
+ 
+@@ -174,6 +175,8 @@
+ 	}
+ 
+ 	if (IsClient()) {
++		NmsVaultApplyLockerBonuses(CastToClient(), b);
++		NmsVaultApplyModBonuses(CastToClient(), b);
+ 		if (CastToClient()->GetPP().tribute_active) {
+ 			for (auto const &t: CastToClient()->GetPP().tributes) {
+ 				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, t.tier);
+--- a/zone/client.cpp
++++ b/zone/client.cpp
+@@ -60,6 +60,7 @@
+ #include "zone/string_ids.h"
+ #include "zone/water_map.h"
+ #include "zone/worldserver.h"
++#include "zone/nms_vault.h"
+ #include "zone/zonedb.h"
+ 
+ #include <cstdlib>
+@@ -698,6 +699,10 @@
+ 	entity_list.RemoveMobFromCloseLists(this);
+ 	m_close_mobs.clear();
+ 
++	// Despawn the vault merchant and drop this character's cached vault state. Logout and
++	// link-death reach here but not SendMerchantEnd.
++	NmsVaultOnClientDestroy(this);
++
+ 	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB (Parcel, EnableParcelMerchants)) {
+ 		DoParcelCancel();
+ 	}
+@@ -13275,6 +13280,7 @@
+ 
+ void Client::SendMerchantEnd()
+ {
++	NmsVaultOnMerchantEnd(this);
+ 	SetMerchantSessionEntityID(0);
+ 
+ 	if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
+--- a/zone/client.h
++++ b/zone/client.h
+@@ -1127,6 +1127,15 @@
+ 	int32 GetItemIDAt(int16 slot_id);
+ 	int32 GetAugmentIDAt(int16 slot_id, uint8 augslot);
+ 	bool PutItemInInventory(int16 slot_id, const EQ::ItemInstance& inst, bool client_update = false);
++	void RollbackFailedItemPut(int16 slot_id, bool client_update = true);
++
++	// Nautilus Vault: bank / merchant opened from the vault rather than a nearby NPC (nms_vault.cpp)
++	inline bool GetNmsVaultBank() const { return m_nms_vault_bank; }
++	inline void SetNmsVaultBank(bool value) { m_nms_vault_bank = value; }
++	inline bool GetNmsVaultMerchant() const { return m_nms_vault_merchant; }
++	inline void SetNmsVaultMerchant(bool value) { m_nms_vault_merchant = value; }
++	inline uint32 GetNmsVaultMerchantId() const { return m_nms_vault_merchant_id; }
++	inline void SetNmsVaultMerchantId(uint32 value) { m_nms_vault_merchant_id = value; }
+ 	bool PutItemInInventoryWithStacking(EQ::ItemInstance* inst);
+ 	bool FindNumberOfFreeInventorySlotsWithSizeCheck(std::vector<BuyerLineTradeItems_Struct> items);
+ 	bool PushItemOnCursor(const EQ::ItemInstance& inst, bool client_update = false);
+@@ -2127,6 +2136,10 @@
+ 
+ 	// https://github.com/EQEmu/Server/pull/2479
+ 	bool m_lock_save_position = false;
++
++	bool m_nms_vault_bank = false;
++	bool m_nms_vault_merchant = false;
++	uint32 m_nms_vault_merchant_id = 0;
+ public:
+ 	bool IsLockSavePosition() const;
+ 	void SetLockSavePosition(bool lock_save_position);
+--- a/zone/client_packet.cpp
++++ b/zone/client_packet.cpp
+@@ -52,6 +52,7 @@
+ #include "zone/titles.h"
+ #include "zone/water_map.h"
+ #include "zone/worldserver.h"
++#include "zone/nms_vault.h"
+ #include "zone/zone.h"
+ 
+ #include "zlib.h"
+@@ -782,6 +783,7 @@
+ 		parse->EventPlayer(EVENT_ENTER_ZONE, this, "", 0);
+ 	}
+ 
++	NmsVaultOnZoneIn(this);
+ 	if (parse->ZoneHasQuestSub(EVENT_ENTER_ZONE)) {
+ 		std::vector<std::any> args = { this };
+ 		parse->EventZone(EVENT_ENTER_ZONE, zone, "", 0, &args);
+@@ -3635,16 +3637,18 @@
+ 		return;
+ 	}
+ 
+-	uint32 distance = 0;
+-	NPC *banker = entity_list.GetClosestBanker(this, distance);
+-
+-	if (!banker || distance > USE_NPC_RANGE2)
+-	{
+-		auto message = fmt::format(
+-		    "Player tried to make use of a banker(money) but {} is non-existant or too far away ({} units).",
+-		    banker ? banker->GetName() : "UNKNOWN NPC", distance);
+-		RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
+-		return;
++	if (!NmsVaultBankAccess(this)) {
++		uint32 distance = 0;
++		NPC *banker = entity_list.GetClosestBanker(this, distance);
++
++		if (!banker || distance > USE_NPC_RANGE2)
++		{
++			auto message = fmt::format(
++			    "Player tried to make use of a banker(money) but {} is non-existant or too far away ({} units).",
++			    banker ? banker->GetName() : "UNKNOWN NPC", distance);
++			RecordPlayerEventLog(PlayerEvent::POSSIBLE_HACK, PlayerEvent::PossibleHackEvent{.message = message});
++			return;
++		}
+ 	}
+ 
+ 	auto outapp = new EQApplicationPacket(OP_BankerChange, nullptr, sizeof(BankerChange_Struct));
+@@ -4426,6 +4430,11 @@
+ 			if (inst && inst->IsClassCommon())
+ 			{
+ 				const EQ::ItemData* item = inst->GetItem();
++				if (NmsVaultTryOpenFromItem(this, item->ID)) {
++					InterruptSpell(castspell->spell_id);
++					SendSpellBarEnable(castspell->spell_id);
++					return;
++				}
+ 				if (item->Click.Effect != (uint32)castspell->spell_id)
+ 				{
+ 					std::string message = fmt::format("OP_CastSpell with item, tried to cast a different spell than what was on item - item spell id [{}] attempted [{}]", item->Click.Effect, (uint32)castspell->spell_id);
+@@ -9463,6 +9472,13 @@
+ 		return;
+ 	}
+ 
++	if (NmsVaultTryOpenFromItem(this, item->ID)) {
++		if (item->Click.Effect > 0) {
++			SendSpellBarEnable(item->Click.Effect);
++		}
++		return;
++	}
++
+ 	spell_id = item->Click.Effect;
+ 	bool is_casting_bard_song = false;
+ 
+@@ -14146,7 +14162,7 @@
+ 		!tmp->IsNPC() ||
+ 		tmp->GetClass() != Class::Merchant ||
+ 		mp->quantity < 1 ||
+-		DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2
++		(!NmsVaultIsMerchant(this, tmp->GetID()) && DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2)
+ 	) {
+ 		SendMerchantEnd();
+ 		return;
+@@ -14386,7 +14402,7 @@
+ 		return;
+ 
+ 	//you have to be somewhat close to them to be properly using them
+-	if (DistanceSquared(m_Position, vendor->GetPosition()) > USE_NPC_RANGE2)
++	if (!NmsVaultIsMerchant(this, vendor->GetID()) && DistanceSquared(m_Position, vendor->GetPosition()) > USE_NPC_RANGE2)
+ 		return;
+ 
+ 	uint32 itemid = GetItemIDAt(mp->itemslot);
+@@ -14607,7 +14623,7 @@
+ 	}
+ 
+ 	// you have to be somewhat close to them to be properly using them
+-	if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2) {
++	if (!NmsVaultIsMerchant(this, tmp->GetID()) && DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2) {
+ 		return;
+ 	}
+ 
+--- a/zone/client_process.cpp
++++ b/zone/client_process.cpp
+@@ -42,6 +42,7 @@
+ #include "zone/worldserver.h"
+ #include "zone/zone.h"
+ #include "zone/zonedb.h"
++#include "zone/nms_vault.h"
+ 
+ #include <iostream>
+ 
+@@ -526,6 +527,9 @@
+ 			DoManaRegen();
+ 			DoEnduranceRegen();
+ 			BuffProcess();
++			if (!dead) {
++				NmsVaultKeepClickies(this);
++			}
+ 
+ 			if (auto_attack) {
+ 				ResetAFKTimer();
+@@ -1352,7 +1356,7 @@
+ 		{
+ 			uint32 distance = 0;
+ 			NPC *banker = entity_list.GetClosestBanker(this, distance);
+-			if(!banker || distance > USE_NPC_RANGE2)
++			if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+ 			{
+ 				auto message = fmt::format(
+ 					"Player tried to make use of a banker (coin move) but "
+@@ -1386,7 +1390,7 @@
+ 		{
+ 			uint32 distance = 0;
+ 			NPC *banker = entity_list.GetClosestBanker(this, distance);
+-			if(!banker || distance > USE_NPC_RANGE2)
++			if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+ 			{
+ 				auto message = fmt::format(
+ 					"Player tried to make use of a banker (shared coin move) but banker [{}] is "
+@@ -1444,7 +1448,7 @@
+ 		{
+ 			uint32 distance = 0;
+ 			NPC *banker = entity_list.GetClosestBanker(this, distance);
+-			if(!banker || distance > USE_NPC_RANGE2)
++			if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+ 			{
+ 				auto message = fmt::format(
+ 					"Player tried to make use of a banker(coin move) but "
+@@ -1506,7 +1510,7 @@
+ 		{
+ 			uint32 distance = 0;
+ 			NPC *banker = entity_list.GetClosestBanker(this, distance);
+-			if(!banker || distance > USE_NPC_RANGE2)
++			if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+ 			{
+ 				auto message = fmt::format(
+ 					"Player tried to make use of a banker (shared coin move) but banker [{}] is "
+--- a/zone/inventory.cpp
++++ b/zone/inventory.cpp
+@@ -27,6 +27,7 @@
+ #include "zone/quest_parser_collection.h"
+ #include "zone/worldserver.h"
+ #include "zone/zonedb.h"
++#include "zone/nms_vault.h"
+ 
+ extern WorldServer worldserver;
+ extern QueryServ  *QServ;
+@@ -1045,6 +1046,47 @@
+ 
+ 	auto s = m_inv.cursor_cbegin(), e = m_inv.cursor_cend();
+ 	return database.SaveCursor(CharacterID(), s, e);
++}
++
++void Client::RollbackFailedItemPut(int16 slot_id, bool client_update)
++{
++	// PushCursor appends; PutItem writes the slot before Save* returns.
++	// Callers that keep the source on persist failure must drop that clone.
++	if (slot_id == EQ::invslot::slotCursor) {
++		EQ::ItemInstance *clone = m_inv.PopCursorBack();
++		safe_delete(clone);
++		auto s = m_inv.cursor_cbegin(), e = m_inv.cursor_cend();
++		database.SaveCursor(CharacterID(), s, e);
++		if (!client_update) {
++			return;
++		}
++		if (m_inv.CursorEmpty()) {
++			auto outapp = new EQApplicationPacket(OP_DeleteItem, sizeof(DeleteItem_Struct));
++			auto *delitem = (DeleteItem_Struct *) outapp->pBuffer;
++			delitem->from_slot = EQ::invslot::slotCursor;
++			delitem->to_slot = 0xFFFFFFFF;
++			delitem->number_in_stack = 0xFFFFFFFF;
++			QueuePacket(outapp);
++			safe_delete(outapp);
++		} else {
++			SendCursorBuffer();
++		}
++		return;
++	}
++
++	EQ::ItemInstance *clone = m_inv.PopItem(slot_id);
++	safe_delete(clone);
++	database.SaveInventory(CharacterID(), nullptr, slot_id);
++	if (client_update && IsValidSlot(slot_id)) {
++		auto outapp = new EQApplicationPacket(OP_DeleteItem, sizeof(DeleteItem_Struct));
++		auto *delitem = (DeleteItem_Struct *) outapp->pBuffer;
++		delitem->from_slot = slot_id;
++		delitem->to_slot = 0xFFFFFFFF;
++		delitem->number_in_stack = 0xFFFFFFFF;
++		QueuePacket(outapp);
++		safe_delete(outapp);
++	}
++	CalcBonuses();
+ }
+ 
+ // Puts an item into the person's inventory
+@@ -1739,7 +1781,7 @@
+ 		uint32 distance = 0;
+ 		NPC *banker = entity_list.GetClosestBanker(this, distance);
+ 
+-		if(!banker || distance > USE_NPC_RANGE2)
++		if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+ 		{
+ 			auto message = fmt::format(
+ 				"Player tried to make use of a banker (items) but banker [{}] is "
+--- a/zone/spell_effects.cpp
++++ b/zone/spell_effects.cpp
+@@ -30,6 +30,7 @@
+ #include "zone/quest_parser_collection.h"
+ #include "zone/string_ids.h"
+ #include "zone/worldserver.h"
++#include "zone/nms_vault.h"
+ 
+ #include <cmath>
+ 
+@@ -6693,6 +6694,41 @@
+ 			}
+ 		}
+ 
++		if (IsClient()) {
++			// Nautilus Vault mod slots: parked items lend their focus best-wins alongside
++			// everything else. The list is pre-filtered to valid ItemEffectFocus entries.
++			const EQ::ItemData *locker_focus[28] = {};
++			const int locker_count = NmsVaultLockerFocusList(CastToClient(), locker_focus, 28);
++			for (int i = 0; i < locker_count; ++i) {
++				TempItem = locker_focus[i];
++				if (rand_effectiveness) {
++					focus_max = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id, true);
++					if (focus_max > 0 && focus_max_real >= 0 && focus_max > focus_max_real) {
++						focus_max_real = focus_max;
++						UsedItem = TempItem;
++						UsedFocusID = TempItem->Focus.Effect;
++					}
++					else if (focus_max < 0 && focus_max < focus_max_real) {
++						focus_max_real = focus_max;
++						UsedItem = TempItem;
++						UsedFocusID = TempItem->Focus.Effect;
++					}
++				}
++				else {
++					Total = CalcFocusEffect(type, TempItem->Focus.Effect, spell_id);
++					if (Total > 0 && realTotal >= 0 && Total > realTotal) {
++						realTotal = Total;
++						UsedItem = TempItem;
++						UsedFocusID = TempItem->Focus.Effect;
++					}
++					else if (Total < 0 && Total < realTotal) {
++						realTotal = Total;
++						UsedItem = TempItem;
++						UsedFocusID = TempItem->Focus.Effect;
++					}
++				}
++			}
++		}
+ 		if (UsedItem && rand_effectiveness && focus_max_real != 0) {
+ 			realTotal = CalcFocusEffect(type, UsedFocusID, spell_id);
+ 		}

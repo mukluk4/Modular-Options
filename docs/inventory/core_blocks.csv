@@ -211,14 +211,6 @@ greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,10-31,22,
 greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,178-178,1,862e1226,warder_instance_status	= get_warder_status();
 greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,212-212,1,862e1226,"eq.set_data(warder_flag_key(), tostring(warder_flag_value()),""H6"");"
 greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,232-232,1,862e1226,warder_instance_status	= get_warder_status()
-hailstone,common/emu_oplist.h,645-648,4,939a7501,"N(OP_PersonalLootList),"
-hailstone,common/eq_packet_structs.h,1646-1695,50,939a7501,"// The same offers for Hailstone's NMS add-on (projecthailstone/hailstone-nms nms_packets.h), whose Personal L"
-hailstone,utils/patches/patch_RoF2.conf,750-753,4,939a7501,OP_PersonalLootList=0x1410
-hailstone,zone/client.h,1057-1058,2,939a7501,inline bool GetNmsPersonalLootWindow() const { return m_nms_personal_loot_window; }
-hailstone,zone/client.h,2363-2363,1,939a7501,"bool m_nms_personal_loot_window = false; // said Hello in this zone: Hailstone's loot window, not OP_NmsLootOf"
-hailstone,zone/client_packet.cpp,442-442,1,939a7501,ConnectedOpcodes[OP_PersonalLootAction] = &Client::Handle_OP_PersonalLootAction;
-hailstone,zone/client_packet.cpp,17317-17321,5,939a7501,void Client::Handle_OP_PersonalLootAction(const EQApplicationPacket *app)
-hailstone,zone/client_packet.h,336-336,1,939a7501,void Handle_OP_PersonalLootAction(const EQApplicationPacket *app);
 instances,Release-NMS-Plugins/NMS_instance_utils.pl,5-7,3,e20710da,# Scale expedition instance NPCs by member count (see ScaleInstanceNPC). 0 = off: NPCs keep their normal stats
 instances,Release-NMS-Plugins/NMS_instance_utils.pl,14-14,1,7c3179a2,my $non_respawning_duration = 6 * 60 * 60; # 6 Hours
 instances,Release-NMS-Plugins/NMS_instance_utils.pl,15-15,1,1cfc64c3,my $respawning_duration =  5 * 60; # 5 minutes
@@ -226,6 +218,7 @@ instances,Release-NMS-Plugins/NMS_instance_utils.pl,116-117,2,e20710da,return if
 instances,Release-NMS-Quests/potimea/player.lua,41-41,1,ef751cea,expedition:AddReplayLockout(6 * 60 * 60) -- 6 Hours
 instances,Release-NMS-Quests/potimea/player.lua,44-44,1,ef751cea,"eq.set_data(expedition_identifier, ""0"", ""6H"")"
 loot-offers,common/emu_oplist.h,643-644,2,cbeab1f6,"N(OP_NmsLootOffer),"
+loot-offers,common/emu_oplist.h,645-648,4,939a7501,"N(OP_PersonalLootList),"
 loot-offers,common/eq_packet_structs.h,1605-1617,13,cbeab1f6,// /nmsloot personal loot offers. Layouts match the installed 3.5 MB dinput8.dll (Rockin-Vik/NMS-Release).
 loot-offers,common/eq_packet_structs.h,1618-1619,2,20cc612d,"// The add-on saves the first field as the ItemID of its sell/keep rules and matches new drops on it,"
 loot-offers,common/eq_packet_structs.h,1620-1621,2,cbeab1f6,struct NmsLootOfferEntry_Struct
@@ -235,16 +228,23 @@ loot-offers,common/eq_packet_structs.h,1625-1625,1,20cc612d,uint32 offer_id;
 loot-offers,common/eq_packet_structs.h,1626-1634,9,cbeab1f6,uint8  bonus;
 loot-offers,common/eq_packet_structs.h,1635-1636,2,20cc612d,uint32 offer_id; // echo of entry+12
 loot-offers,common/eq_packet_structs.h,1637-1645,9,cbeab1f6,uint8  action;
+loot-offers,common/eq_packet_structs.h,1646-1695,50,939a7501,"// The same offers for Hailstone's NMS add-on (projecthailstone/hailstone-nms nms_packets.h), whose Personal L"
 loot-offers,common/ruletypes.h,1312-1312,1,e20710da,"RULE_BOOL(Custom,   NmsLootEmptyGroupCorpse,				true, ""When /nmsloot offers go to 2 or more players, remove th"
 loot-offers,common/ruletypes.h,1313-1313,1,e8e876e9,"RULE_BOOL(Custom,   NmsLootEmptySoloCorpse,					false, ""When /nmsloot offers go to a lone player, remove the c"
 loot-offers,utils/patches/patch_RoF2.conf,748-749,2,cbeab1f6,OP_NmsLootOffer=0x140A
+loot-offers,utils/patches/patch_RoF2.conf,750-753,4,939a7501,OP_PersonalLootList=0x1410
 loot-offers,zone/attack.cpp,2930-2944,15,3be364b1,// /nmsloot: personal loot rolls for the credited client and their group/raid in this zone
 loot-offers,zone/attack.cpp,2947-2947,1,3be364b1,if (item != nullptr && !(nms_loot_empties_corpse && item->lootdrop_id)) {
 loot-offers,zone/attack.cpp,3205-3206,2,cbeab1f6,"NmsLootOfferOnCorpseCreated(corpse, nms_loot_credit, this);"
+loot-offers,zone/client.h,1057-1058,2,939a7501,inline bool GetNmsPersonalLootWindow() const { return m_nms_personal_loot_window; }
+loot-offers,zone/client.h,2363-2363,1,939a7501,"bool m_nms_personal_loot_window = false; // said Hello in this zone: Hailstone's loot window, not OP_NmsLootOf"
 loot-offers,zone/client_packet.cpp,441-441,1,cbeab1f6,ConnectedOpcodes[OP_NmsLootDecision] = &Client::Handle_OP_NmsLootDecision;
+loot-offers,zone/client_packet.cpp,442-442,1,939a7501,ConnectedOpcodes[OP_PersonalLootAction] = &Client::Handle_OP_PersonalLootAction;
 loot-offers,zone/client_packet.cpp,10842-10842,1,cbeab1f6,"NmsLootOfferOnCorpseOpen(this, ent->CastToCorpse());"
 loot-offers,zone/client_packet.cpp,17312-17316,5,cbeab1f6,void Client::Handle_OP_NmsLootDecision(const EQApplicationPacket *app)
+loot-offers,zone/client_packet.cpp,17317-17321,5,939a7501,void Client::Handle_OP_PersonalLootAction(const EQApplicationPacket *app)
 loot-offers,zone/client_packet.h,335-335,1,cbeab1f6,void Handle_OP_NmsLootDecision(const EQApplicationPacket *app);
+loot-offers,zone/client_packet.h,336-336,1,939a7501,void Handle_OP_PersonalLootAction(const EQApplicationPacket *app);
 loot-offers,zone/corpse.cpp,9-11,3,cbeab1f6,#include <process.h>
 loot-offers,zone/corpse.cpp,40-43,4,cbeab1f6,"#include ""nms_loot_offers.h"""
 loot-offers,zone/corpse.cpp,47-70,24,cbeab1f6,namespace {

@@ -14,6 +14,9 @@ docs,docs/players/make_players_guide.py
 dynamic-items,common/dynamic_item_structs.h
 dynamic-items,docs/dynamic_items/README.md
 dynamic-items,docs/dynamic_items/USER_GUIDE.md
+dynamic-items,utils/hailstone-dynitems/README.md
+dynamic-items,utils/hailstone-dynitems/dynitems/init.lua
+dynamic-items,utils/hailstone-dynitems/dynitems/ui/modern/dynitems.lua
 dynamic-items,utils/scripts/dynamic_items/2026_10_22_berserker_no_1h.sql
 dynamic-items,utils/scripts/dynamic_items/2026_10_22_heroics_base_rebalance.sql
 dynamic-items,utils/scripts/dynamic_items/2026_10_22_hybrid_mana_endurance.sql
@@ -73,9 +76,6 @@ greater-rifts,utils/scripts/rift/sql/2026_10_23_01_rift_npc_models.sql
 greater-rifts,utils/scripts/rift/sql/2026_10_23_02_guardian_resists.sql
 greater-rifts,utils/scripts/rift/sql/2026_10_23_03_rift_deepest_bucket.sql
 greater-rifts,utils/scripts/rift/sql/rift_zones_setup.sql
-hailstone,utils/hailstone-dynitems/README.md
-hailstone,utils/hailstone-dynitems/dynitems/init.lua
-hailstone,utils/hailstone-dynitems/dynitems/ui/modern/dynitems.lua
 loot-offers,zone/nms_loot_offers.cpp
 loot-offers,zone/nms_loot_offers.h
 paragon-aa,utils/scripts/rift/client/dbstr_paragon.txt

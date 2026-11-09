@@ -1,0 +1,3 @@
+RULE_BOOL(Custom, NautilusVault, false, "Nautilus Vault (needs the NMS client add-on): vault storage, Proc Locker, clicky autoload, vault bank and merchant, and the vault key item (9011009) given on zone-in. Off = no vault commands, key, or combat hooks")
+RULE_BOOL(Custom, ProcLockerStacks, true, "Proc Locker items proc on their own rolls beside the held weapon and its augs. False: the locker item replaces the held weapon's proc and suppresses its aug procs")
+RULE_BOOL(Custom, ProcLockerModSlots, true, "Nautilus Vault slots 84-87 lend their item's skill mods, instrument mods and focus effects (never stats or procs)")

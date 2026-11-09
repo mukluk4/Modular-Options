@@ -1,0 +1,16 @@
+{
+	"name": "loot-offers",
+	"title": "Personal loot offers (/nmsloot)",
+	"description": "On an NPC's death, its loot is rolled again for each group or raid member in the zone and offered in a personal loot window: keep, sell, tribute, bank, vault, destroy or pass from anywhere in the zone. Works with the NMS client add-on (RoF2) and the Hailstone client's personal loot window.",
+	"bases": ["eqemu", "nms"],
+	"requires": ["vault"],
+	"sources": {
+		"zone": ["nms_loot_offers.cpp"],
+		"zone_headers": ["nms_loot_offers.h"],
+		"gm_commands": ["gm_commands/nmsloot.cpp"]
+	},
+	"commands": [
+		{"name": "nmsloot_decide", "access": "AccountStatus::GMAdmin", "function": "command_nmsloot_decide",
+		 "description": "Apply a /nmsloot decision (offer_id action [pass_to])"}
+	]
+}

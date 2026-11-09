@@ -1,0 +1,55 @@
+--- a/zone/aa.cpp
++++ b/zone/aa.cpp
+@@ -34,6 +34,7 @@
+ #include "zone/corpse.h"
+ #include "zone/groups.h"
+ #include "zone/mob.h"
++#include "zone/nms_paragon.h"
+ #include "zone/queryserv.h"
+ #include "zone/quest_parser_collection.h"
+ #include "zone/raids.h"
+@@ -962,11 +963,15 @@
+ 	aai->category = ability->category;
+ 	aai->charges = ability->charges;
+ 	aai->grant_only = ability->grant_only;
+-	aai->total_effects = rank->effects.size();
++	// Server-only effects (Paragon heroic stats) aren't sent; the client has no such spell effect
++	aai->total_effects = std::count_if(rank->effects.begin(), rank->effects.end(), [](const auto &e) { return !NmsIsParagonSpa(e.effect_id); });
+ 	aai->total_prereqs = rank->prereqs.size();
+ 
+ 	outapp->SetWritePosition(sizeof(AARankInfo_Struct));
+ 	for(auto &effect : rank->effects) {
++		if (NmsIsParagonSpa(effect.effect_id)) {
++			continue;
++		}
+ 		outapp->WriteSInt32(effect.effect_id);
+ 		outapp->WriteSInt32(effect.base_value);
+ 		outapp->WriteSInt32(effect.limit_value);
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -20,6 +20,7 @@
+ #include "common/rulesys.h"
+ #include "common/spdat.h"
+ #include "zone/client.h"
++#include "zone/nms_paragon.h"
+ #include "zone/entity.h"
+ #include "zone/mob.h"
+ #include "zone/bot.h"
+@@ -62,6 +63,7 @@
+ {
+ 	memset(&itembonuses, 0, sizeof(StatBonuses));
+ 	CalcItemBonuses(&itembonuses);
++	NmsParagonApplyBonuses(this, &itembonuses); // AA heroic stats count as item heroics
+ 	CalcHeroicBonuses(&itembonuses);
+ 	CalcEdibleBonuses(&itembonuses);
+ 	CalcSpellBonuses(&spellbonuses);
+--- a/zone/mob.h
++++ b/zone/mob.h
+@@ -1435,6 +1435,7 @@
+ 	uint32 GetAAByAAID(uint32 aa_id, uint32 *charges = nullptr) const;
+ 	bool SetAA(uint32 rank_id, uint32 new_value, uint32 charges = 0);
+ 	void ClearAAs() { aa_ranks.clear(); }
++	const std::unordered_map<uint32, std::pair<uint32, uint32>> &GetAAs() const { return aa_ranks; } // ability id -> (rank value, charges)
+ 	bool CanUseAlternateAdvancementRank(AA::Rank *rank);
+ 	bool CanPurchaseAlternateAdvancementRank(AA::Rank *rank, bool check_price, bool check_grant);
+ 	int GetAlternateAdvancementCooldownReduction(AA::Rank *rank_in);

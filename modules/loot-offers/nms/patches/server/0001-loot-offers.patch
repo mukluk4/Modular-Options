@@ -1,0 +1,459 @@
+--- a/common/emu_oplist.h
++++ b/common/emu_oplist.h
+@@ -640,4 +640,10 @@
+ N(OP_CharacterSetMoveRequest),
+ N(OP_CharacterSetUnlockRequest),
+ N(OP_SuppressBuffNameInfo),
++N(OP_NmsLootOffer),
++N(OP_NmsLootDecision),
++N(OP_PersonalLootList),
++N(OP_PersonalLootAction),
++N(OP_PersonalLootSettings),
++N(OP_PersonalLootHistory),
+ // mail and chat opcodes located in ../mail_oplist.h
+--- a/common/eq_packet_structs.h
++++ b/common/eq_packet_structs.h
+@@ -1602,6 +1602,97 @@
+     bool    autoconfirm_selected;
+ };
+ 
++// /nmsloot personal loot offers. Layouts match the installed 3.5 MB dinput8.dll (Rockin-Vik/NMS-Release).
++#pragma pack(push, 1)
++struct NmsLootOfferHeader_Struct
++{
++	uint16 unknown_u16;
++	char   title[64];
++	uint32 corpse_id;
++	uint32 expire_seconds;
++	uint32 unknown_u32_a;
++	uint32 unknown_u32_b;
++	uint32 count;
++};
++
++// The add-on saves the first field as the ItemID of its sell/keep rules and matches new drops on it,
++// so it must be the item id; the offer id rides at entry+12 and comes back in the decision
++struct NmsLootOfferEntry_Struct
++{
++	uint32 item_id;
++	uint32 icon;
++	int32  charges;
++	uint32 offer_id;
++	uint8  bonus;
++	uint8  unknown_17[5];
++	char   name[64];
++	char   name2[64];
++};
++
++struct NmsLootDecision_Struct
++{
++	uint16 unknown_u16;
++	uint32 offer_id; // echo of entry+12
++	uint32 item_id;  // echo of entry+0
++	uint8  action;
++	char   name[64];
++};
++#pragma pack(pop)
++
++static_assert(sizeof(NmsLootOfferHeader_Struct) == 86, "NmsLootOfferHeader_Struct must match the installed add-on header");
++static_assert(sizeof(NmsLootOfferEntry_Struct) == 150, "NmsLootOfferEntry_Struct must match the installed add-on entry");
++static_assert(sizeof(NmsLootDecision_Struct) == 75, "NmsLootDecision_Struct must match the installed add-on decision payload");
++
++// The same offers for Hailstone's NMS add-on (projecthailstone/hailstone-nms nms_packets.h), whose Personal Loot
++// window speaks the original NMS server's protocol. A client that sends the Hello (action 20) gets these instead
++// of OP_NmsLootOffer. OP_PersonalLootList: header, then count rows; count 0 clears the window.
++#pragma pack(push, 1)
++struct PersonalLootListHeader_Struct
++{
++	uint32 flags; // 1: show the window
++	uint32 count;
++};
++
++struct PersonalLootRow_Struct
++{
++	uint32 pending_id; // the offer id, echoed in OP_PersonalLootAction
++	uint32 item_id;
++	uint32 icon;
++	uint32 quantity;
++	uint32 charges;
++	uint32 sell_value;   // copper the Sell button pays; 0 makes it a Destroy button
++	uint32 seconds_left; // until the offer expires
++	uint8  rule;
++	uint8  lore;
++	uint8  no_drop;
++	uint8  augmented;
++	char   item_name[64];
++	char   npc_name[64];
++};
++
++struct PersonalLootAction_Struct
++{
++	uint32 action;
++	uint32 pending_id;
++	uint32 item_id;
++	uint32 value;
++};
++
++struct PersonalLootSettings_Struct
++{
++	uint32 flags; // 1: personal loot is on
++	uint32 sell_under;
++	uint32 timeout_seconds;
++	uint8  defer_in_combat;
++	uint8  report_enabled;
++	uint8  padding[2];
++};
++#pragma pack(pop)
++
++static_assert(sizeof(PersonalLootRow_Struct) == 160, "PersonalLootRow_Struct must match the Hailstone NMS add-on row");
++static_assert(sizeof(PersonalLootAction_Struct) == 16, "PersonalLootAction_Struct must match the Hailstone NMS add-on action");
++static_assert(sizeof(PersonalLootSettings_Struct) == 16, "PersonalLootSettings_Struct must match the Hailstone NMS add-on settings");
++
+ /*
+ ** Consider Struct
+ */
+--- a/utils/patches/patch_RoF2.conf
++++ b/utils/patches/patch_RoF2.conf
+@@ -745,6 +745,12 @@
+ OP_CharacterSetMoveRequest=0x1407
+ OP_CharacterSetUnlockRequest=0x1408
+ OP_SuppressBuffNameInfo=0x1409
++OP_NmsLootOffer=0x140A
++OP_NmsLootDecision=0x140B
++OP_PersonalLootList=0x1410
++OP_PersonalLootAction=0x1411
++OP_PersonalLootSettings=0x1413
++OP_PersonalLootHistory=0x1414
+ OP_PickZoneWindow=0x72d8
+ OP_PickZone=0xaaba
+ 
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -41,6 +41,7 @@
+ 
+ #include "bot.h"
+ #include "nms_vault.h"
++#include "nms_loot_offers.h"
+ 
+ extern QueryServ* QServ;
+ extern WorldServer worldserver;
+@@ -2925,9 +2926,24 @@
+ 		entity_list.RemoveFromAutoXTargets(this);
+ 
+ 
++		// /nmsloot: personal loot rolls for the credited client and their group/raid in this zone
++		Client *nms_loot_credit = nullptr;
++		if (killer && killer->IsClient()) {
++			nms_loot_credit = killer->CastToClient();
++		} else if (killer_mob) {
++			Mob *ultimate_owner = killer_mob->GetUltimateOwner();
++			if (ultimate_owner && ultimate_owner->IsClient()) {
++				nms_loot_credit = ultimate_owner->CastToClient();
++			}
++		}
++
++		// When the personal rolls replace the corpse's loot-table items, those items are removed unseen, so
++		// upgrading and announcing them promised loot nobody got. The personal rolls get their own upgrade roll.
++		const bool nms_loot_empties_corpse = NmsLootOfferEmptiesCorpse(nms_loot_credit);
++
+ 		if (database.LootBuffEnabled()) {
+ 			for (LootItem* item : m_loot_items) {
+-				if (item != nullptr) {
++				if (item != nullptr && !(nms_loot_empties_corpse && item->lootdrop_id)) {
+ 					auto old_id = item->item_id;
+ 					item->item_id = DoUpgradeLoot(item->item_id);
+ 
+@@ -3184,6 +3200,8 @@
+ 				corpse->AllowPlayerLoot(ultimate_owner, 0);
+ 			}
+ 		}
++
++		NmsLootOfferOnCorpseCreated(corpse, nms_loot_credit, this);
+ 
+ 		if (zone && zone->adv_data) {
+ 			auto sr = (ServerZoneAdventureDataReply_Struct *) zone->adv_data;
+--- a/zone/client.h
++++ b/zone/client.h
+@@ -1027,6 +1027,8 @@
+ 	inline void SetNmsVaultMerchant(bool value) { m_nms_vault_merchant = value; }
+ 	inline uint32 GetNmsVaultMerchantId() const { return m_nms_vault_merchant_id; }
+ 	inline void SetNmsVaultMerchantId(uint32 value) { m_nms_vault_merchant_id = value; }
++	inline bool GetNmsPersonalLootWindow() const { return m_nms_personal_loot_window; }
++	inline void SetNmsPersonalLootWindow(bool value) { m_nms_personal_loot_window = value; }
+ 	const std::vector<EQ::skills::SkillType> GetAutoSkillsList() const;
+ 	const std::vector<EQ::skills::SkillType> GetAvailableAutoSkills() const;
+ 
+@@ -2331,6 +2333,7 @@
+ 	bool m_nms_vault_bank = false;
+ 	bool m_nms_vault_merchant = false;
+ 	uint32 m_nms_vault_merchant_id = 0;
++	bool m_nms_personal_loot_window = false; // said Hello in this zone: Hailstone's loot window, not OP_NmsLootOffer
+ public:
+ 	bool IsLockSavePosition() const;
+ 	void SetLockSavePosition(bool lock_save_position);
+--- a/zone/client_packet.cpp
++++ b/zone/client_packet.cpp
+@@ -78,6 +78,7 @@
+ #include "../common/rulesys.h"
+ #include "../common/repositories/adventure_members_repository.h"
+ #include "nms_vault.h"
++#include "nms_loot_offers.h"
+ 
+ extern QueryServ* QServ;
+ extern Zone* zone;
+@@ -436,6 +437,8 @@
+ 	ConnectedOpcodes[OP_ResetAA] = &Client::Handle_OP_ResetAA;
+ 	ConnectedOpcodes[OP_UnderWorld] = &Client::Handle_OP_UnderWorld;
+ 	ConnectedOpcodes[OP_WaypointRequest] = &Client::Handle_OP_WaypointRequest;
++	ConnectedOpcodes[OP_NmsLootDecision] = &Client::Handle_OP_NmsLootDecision;
++	ConnectedOpcodes[OP_PersonalLootAction] = &Client::Handle_OP_PersonalLootAction;
+ 
+ 	// shared tasks
+ 	ConnectedOpcodes[OP_SharedTaskRemovePlayer]   = &Client::Handle_OP_SharedTaskRemovePlayer;
+@@ -829,6 +832,7 @@
+ 	}
+ 
+ 	NmsVaultOnZoneIn(this);
++	NmsLootOfferRestoreOnZoneIn(this);
+ 
+ 	DeleteEntityVariable(SEE_BUFFS_FLAG);
+ 
+@@ -10751,6 +10755,7 @@
+ 		SetLooting(ent->GetID()); //store the entity we are looting
+ 
+ 		ent->CastToCorpse()->MakeLootRequestPackets(this, app);
++		NmsLootOfferOnCorpseOpen(this, ent->CastToCorpse());
+ 		return;
+ 	}
+ 	else {
+@@ -17199,6 +17204,16 @@
+ 	}
+ }
+ 
++void Client::Handle_OP_NmsLootDecision(const EQApplicationPacket *app)
++{
++	NmsLootOfferHandleDecision(this, app);
++}
++
++void Client::Handle_OP_PersonalLootAction(const EQApplicationPacket *app)
++{
++	NmsLootOfferHandlePersonalLootAction(this, app);
++}
++
+ void Client::Handle_OP_WaypointRequest(const EQApplicationPacket *app)
+ {
+ 	if (app->size != sizeof(WaypointRequest_Struct)) {
+--- a/zone/client_packet.h
++++ b/zone/client_packet.h
+@@ -332,6 +332,8 @@
+ 	void Handle_OP_MovementHistoryList(const EQApplicationPacket* app);
+ 	void Handle_OP_UnderWorld(const EQApplicationPacket* app);
+ 	void Handle_OP_WaypointRequest(const EQApplicationPacket *app);
++	void Handle_OP_NmsLootDecision(const EQApplicationPacket *app);
++	void Handle_OP_PersonalLootAction(const EQApplicationPacket *app);
+ 
+ 	// shared tasks
+ 	void Handle_OP_SharedTaskRemovePlayer(const EQApplicationPacket *app);
+--- a/zone/corpse.cpp
++++ b/zone/corpse.cpp
+@@ -6,6 +6,9 @@
+ #endif
+ #define strncasecmp	_strnicmp
+ #define strcasecmp	_stricmp
++#include <process.h>
++#else
++#include <unistd.h>
+ #endif
+ 
+ #include "../common/data_verification.h"
+@@ -34,8 +37,36 @@
+ #include <iostream>
+ #include "queryserv.h"
+ #include "../common/json/json.hpp"
++#include "nms_loot_offers.h"
++
++#include <chrono>
++#include <random>
+ 
+ using json = nlohmann::json;
++
++namespace {
++	// Unique per corpse for the life of the zone process; /nmsloot offers key on it so a reused
++	// entity id never matches a newer corpse.
++	uint64 NextNmsLootSerial()
++	{
++		static uint64 next = []() {
++			const uint64 ticks = static_cast<uint64>(
++				std::chrono::high_resolution_clock::now().time_since_epoch().count()
++			);
++#ifdef _WINDOWS
++			const uint64 pid = static_cast<uint64>(_getpid());
++#else
++			const uint64 pid = static_cast<uint64>(getpid());
++#endif
++			std::random_device rd;
++			const uint64 rnd = (static_cast<uint64>(rd()) << 32) ^ static_cast<uint64>(rd());
++			uint64 seed = ticks ^ (pid << 32) ^ rnd;
++			return seed ? seed : 0x9e3779b97f4a7c15ULL;
++		}();
++		const uint64 value = next++;
++		return value ? value : next++;
++	}
++}
+ 
+ extern EntityList           entity_list;
+ extern Zone                *zone;
+@@ -184,6 +215,7 @@
+ 	UpdateActiveLight();
+ 
+ 	m_loot_request_type = LootRequestType::Forbidden;
++	m_nms_loot_serial = NextNmsLootSerial();
+ }
+ 
+ Corpse::Corpse(Client *c, int32 rez_exp, KilledByTypes in_killed_by) : Mob(
+@@ -285,6 +317,7 @@
+ 	m_remaining_rez_time        = 0;
+ 	m_is_owner_online           = false;
+ 	m_account_id                = c->AccountID();
++	m_nms_loot_serial           = NextNmsLootSerial();
+ 
+ 	// timers
+ 	m_corpse_decay_timer.SetTimer(RuleI(Character, CorpseDecayTime));
+@@ -407,6 +440,7 @@
+ 	UpdateActiveLight();
+ 
+ 	m_loot_request_type = LootRequestType::Forbidden;
++	m_nms_loot_serial = NextNmsLootSerial();
+ 
+ 	IsRezzed(false);
+ 	Save();
+@@ -601,6 +635,7 @@
+ 	UpdateActiveLight();
+ 
+ 	m_loot_request_type = LootRequestType::Forbidden;
++	m_nms_loot_serial = NextNmsLootSerial();
+ }
+ 
+ Corpse::~Corpse()
+@@ -900,13 +935,22 @@
+ 	}
+ }
+ 
+-void Corpse::RemoveItem(LootItem *item_data)
++void Corpse::RemoveItem(LootItem *item_data, bool forget_offers)
+ {
+ 	for (auto iter = m_item_list.begin(); iter != m_item_list.end(); ++iter) {
+ 		auto sitem = *iter;
+ 		if (sitem != item_data) { continue; }
+ 
+ 		m_is_corpse_changed = true;
++		if (forget_offers) {
++			uint32 looter_id = 0;
++			if (auto *looter = entity_list.GetClientByID(m_being_looted_by_entity_id)) {
++				looter_id = looter->CharacterID();
++			}
++			if (looter_id) {
++				NmsLootOfferForgetCorpseItem(looter_id, GetID(), GetNmsLootSerial(), sitem);
++			}
++		}
+ 		m_item_list.erase(iter);
+ 
+ 		uint8 material = EQ::InventoryProfile::CalcMaterialFromSlot(sitem->equip_slot); // autos to unsigned char
+--- a/zone/corpse.h
++++ b/zone/corpse.h
+@@ -159,7 +159,9 @@
+ 	void SetPlayerKillItemID(int32 pk_item_id) { m_player_kill_item = pk_item_id; }
+ 	int32 GetPlayerKillItem() { return m_player_kill_item; }
+ 	void RemoveItem(uint16 lootslot);
+-	void RemoveItem(LootItem *item_data);
++	void RemoveItem(LootItem *item_data, bool forget_offers = true);
++	inline LootRequestType GetLootRequestType() const { return m_loot_request_type; }
++	inline uint64 GetNmsLootSerial() const { return m_nms_loot_serial; }
+ 	void RemoveItemByID(uint32 item_id, int quantity = 1);
+ 	void AddItem(
+ 		uint32 itemnum,
+@@ -294,6 +296,7 @@
+ 	bool                     m_is_owner_online;
+ 	std::vector<std::string> m_consented_player_names;
+ 	LootRequestType          m_loot_request_type;
++	uint64                   m_nms_loot_serial = 0;
+ 	uint32                   m_account_id;
+ 	bool					 m_seasonal;
+ 	bool					 m_hardcore;	
+--- a/zone/loot.cpp
++++ b/zone/loot.cpp
+@@ -336,6 +336,26 @@
+ 	}
+ 
+ 	if (!item2) {
++		return;
++	}
++
++	// RollIndependentLoot: collect the roll for /nmsloot instead of adding it to this NPC
++	if (m_loot_item_sink) {
++		auto item = new LootItem{};
++		item->item_id           = item2->ID;
++		item->charges           = loot_drop.item_charges;
++		item->aug_1             = augment_one;
++		item->aug_2             = augment_two;
++		item->aug_3             = augment_three;
++		item->aug_4             = augment_four;
++		item->aug_5             = augment_five;
++		item->aug_6             = augment_six;
++		item->attuned           = false;
++		item->equip_slot        = EQ::invslot::SLOT_INVALID;
++		item->lootdrop_id       = loot_drop.lootdrop_id;
++		item->trivial_min_level = loot_drop.trivial_min_level;
++		item->trivial_max_level = loot_drop.trivial_max_level;
++		m_loot_item_sink->push_back(item);
+ 		return;
+ 	}
+ 
+@@ -751,6 +771,30 @@
+ 	}
+ }
+ 
++void NPC::RollIndependentLoot(LootItems &out)
++{
++	if (!npctype_id || !zone) {
++		return;
++	}
++
++	m_loot_item_sink = &out;
++	const uint32 copper = m_loot_copper;
++	const uint32 silver = m_loot_silver;
++	const uint32 gold   = m_loot_gold;
++	const uint32 plat   = m_loot_platinum;
++
++	AddLootTable(m_loottable_id, false);
++	if (DropsGlobalLoot()) {
++		CheckGlobalLootTables();
++	}
++
++	m_loot_copper   = copper;
++	m_loot_silver   = silver;
++	m_loot_gold     = gold;
++	m_loot_platinum = plat;
++	m_loot_item_sink = nullptr;
++}
++
+ void ZoneDatabase::LoadGlobalLoot()
+ {
+ 	const auto &l = GlobalLootRepository::GetWhere(
+--- a/zone/npc.h
++++ b/zone/npc.h
+@@ -224,6 +224,7 @@
+ 	void AddLootTable(uint32 loottable_id, bool is_global = false);
+ 	void AddLootDropTable(uint32 lootdrop_id, uint8 drop_limit, uint8 min_drop);
+ 	void CheckGlobalLootTables();
++	void RollIndependentLoot(LootItems &out); // /nmsloot: roll this NPC's tables into out without touching its own loot
+ 	void RemoveItemByPercent(float percent, int min_delete = 1, int max_delete = -1);
+ 	void RemoveItem(uint32 item_id, uint16 quantity = 0, uint16 slot = 0);
+ 	void CheckTrivialMinMaxLevelDrop(Mob *killer);
+@@ -727,6 +728,7 @@
+ 	uint32    m_loot_gold;
+ 	uint32    m_loot_platinum;
+ 	LootItems m_loot_items;
++	LootItems *m_loot_item_sink = nullptr; // set only during RollIndependentLoot
+ 
+ 	// zone state
+ 	bool m_resumed_from_zone_suspend = false;

@@ -49,7 +49,7 @@ one script instead, for a first install by hand.
    | `zone/modules.cmake` | the modules' new source files, added to `zone_sources`, `zone_headers` and `gm_command_sources` |
    | `common/modules_rules.h` | the modules' rules, all in the `Custom` category, so rule names are `Custom:<Name>` on both bases |
    | `zone/modules_commands.h`, `zone/modules_commands.inc` | GM command declarations and `command_add` lines |
-   | `common/modules.h` | `#define EQMOD_<MODULE> 1` for each installed module, for code that works with or without another module |
+   | `common/modules.h` | `EQMOD_BASE_EQEMU` or `EQMOD_BASE_NMS`, for shared module code that differs by base, and `#define EQMOD_<MODULE> 1` for each installed module, for code that works with or without another module |
    | `modules.lock.json` | the base, this repository's version, and every file and patch each module installed |
 
    Shared lists (rules, commands, build sources) are generated rather than patched, because many modules add to the
@@ -99,6 +99,10 @@ modules/<name>/
   `files/server/zone/...` (or under a base folder).
 - Patches are applied in file name order, so name them `0001-...patch`, `0002-...patch`. Their paths are relative to the
   server source folder (`a/zone/client.h`), or to the quests folder for `patches/quests/`.
+- Modules that don't require each other are patched against the bare base, so two of them adding lines at the same spot
+  (say, an `#include` after the same line) collide when both are installed. Anchor such lines somewhere no other module
+  uses; `test` installs every module together to catch this. A module that requires another is cut on top of that
+  module's patch (`extract_patch.py --after`).
 - SQL files run in file name order across the module's shared and base folders; name them by date as the server's own
   migrations are (`2026_11_09_01_...sql`). Write them so a second run does no harm where possible (`INSERT IGNORE`,
   `CREATE TABLE IF NOT EXISTS`), because `--out` scripts can be run by hand more than once.

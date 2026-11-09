@@ -1,0 +1,20 @@
+{
+	"name": "vault",
+	"title": "Nautilus Vault",
+	"description": "Per-character item vault opened from a key item, with vault bags, a bank and merchant you can use anywhere, a Proc Locker whose items proc beside your weapon, mod slots that lend focus effects, and clicky buffs kept up while the item is vaulted. Needs the NMS client add-on for its window.",
+	"bases": ["eqemu", "nms"],
+	"sources": {
+		"zone": ["nms_vault.cpp"],
+		"zone_headers": ["nms_vault.h"],
+		"gm_commands": ["gm_commands/vault.cpp"]
+	},
+	"commands": [
+		{"name": "vault_page", "access": "AccountStatus::Player", "function": "command_vault_page", "description": "Open a Nautilus Vault page"},
+		{"name": "vault_deposit", "access": "AccountStatus::Player", "function": "command_vault_deposit", "description": "Deposit the cursor item into a vault slot"},
+		{"name": "vault_withdraw", "access": "AccountStatus::Player", "function": "command_vault_withdraw", "description": "Withdraw an item from a vault slot"},
+		{"name": "vault_bank", "access": "AccountStatus::Player", "function": "command_vault_bank", "description": "Open the bank from the Nautilus Vault"},
+		{"name": "vault_merchant", "access": "AccountStatus::Player", "function": "command_vault_merchant", "description": "Open a merchant from the Nautilus Vault"},
+		{"name": "vault_deposit_bagitem_specific", "access": "AccountStatus::Player", "function": "command_vault_deposit_bagitem_specific", "description": "Deposit the cursor item into a vault bag slot"},
+		{"name": "vault_withdraw_bagitem", "access": "AccountStatus::Player", "function": "command_vault_withdraw_bagitem", "description": "Withdraw an item from a vault bag slot"}
+	]
+}
