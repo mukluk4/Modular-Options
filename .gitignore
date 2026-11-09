@@ -1,0 +1,16 @@
+# Database dumps and backups hold player data and password hashes: never commit them
+*.sql.gz
+*.dump
+backups/
+peq-dump/
+
+# Local server and client settings
+.env
+*.ini
+!**/defaults/*.ini
+
+# Build output
+build/
+bin/
+obj/
+__pycache__/

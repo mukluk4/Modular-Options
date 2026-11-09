@@ -1,0 +1,435 @@
+module,file,lines (at 0c897d30),count,commit,first line
+chronal-tribute,zone/bonuses.cpp,202-210,9,446474fc,for (int r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
+chronal-tribute,zone/tribute.cpp,28-28,1,446474fc,"#include ""nms_chronal_tribute.h"""
+chronal-tribute,zone/tribute.cpp,83-87,5,446474fc,// Chronal Tributes are paid per rift run instead (NmsChronalTributeRefresh)
+chronal-tribute,zone/tribute.cpp,111-112,2,446474fc,NmsChronalTributeRefresh(this);
+chronal-tribute,zone/tribute.cpp,157-163,7,446474fc,"// A Chronal Tribute outside its rift band: no benefit item, so the client doesn't count its stats"
+chronal-tribute,zone/tribute.cpp,165-166,2,446474fc,"const uint32 tier_index = NmsIsChronalTribute(tid) ? NmsChronalTributeTier(this, m_pp.tributes[r].tier) : m_pp"
+core-fixes,zone/mob.cpp,5494-5496,3,be88faa1,// Target's target procs (remote heals) resolve from the mob themselves; implied targeting would move a
+core-fixes,zone/spell_effects.cpp,4609-4611,3,f64b854e,"// A suppressed buff (SPELL_SUPPRESSED, not a real spell id) had its effects removed when it was suppressed;"
+core-fixes,zone/zone.cpp,278-278,1,763f5111,"// Keep the stored z where the map has no floor, or the object lands at BEST_Z_INVALID"
+core-fixes,zone/zone.cpp,280-283,4,763f5111,"const float best_z = zone->zonemap->FindBestZ(position, nullptr);"
+core-fixes,zone/zone.cpp,3208-3210,3,44a10589,// allow_remove = false (zone boot) only ever adds them: a zone process holding stale or overridden
+core-fixes,zone/zone.cpp,3231-3231,1,44a10589,else if (allow_remove) {
+core-fixes,zone/zone.h,122-122,1,44a10589,void HandlePermanentServerBuffs(bool allow_remove = true);
+core-fixes,zone/zone_save_state.cpp,77-77,1,9e128382,const size_t before = npc->GetLootItems().size();
+core-fixes,zone/zone_save_state.cpp,79-82,4,9e128382,"// Keep the table link, or /nmsloot treats the drop as quest-added and leaves it on the corpse"
+docs,README.md,1-1,1,a69d04b6,# Voidforged
+docs,README.md,3-6,4,a69d04b6,"A multiclass EverQuest emulator server, built on the"
+docs,README.md,8-10,3,a69d04b6,The player-facing introduction is the **Player's Guide**:
+docs,README.md,12-12,1,a69d04b6,---
+docs,README.md,14-14,1,a69d04b6,## What Voidforged adds
+docs,README.md,16-17,2,a69d04b6,| System | What it is | Where |
+docs,README.md,19-28,10,a69d04b6,"| Dynamic items | Gear that rolls class-weighted stats once, on purchase, stored as a seed | `zone/dynamic_ite"
+docs,README.md,30-32,3,a69d04b6,Paths in the table are under `Release-NMS-Server/`. On top of all this is the NMS base:
+docs,README.md,34-34,1,a69d04b6,## Layout
+docs,README.md,38-40,3,a69d04b6,"| [`Release-NMS-Server/`](Release-NMS-Server/) | The server source (EQEmu-based), generators, SQL and docs |"
+docs,README.md,43-46,4,a69d04b6,Voidforged's own quest scripts and Lua modules live with their generators under
+docs,README.md,48-48,1,a69d04b6,## Building
+docs,README.md,50-50,1,a69d04b6,Windows (Visual Studio 2022 or later):
+docs,README.md,52-55,4,a69d04b6,```
+docs,README.md,57-60,4,a69d04b6,"On low-memory machines, build one target at a time with limited parallelism"
+docs,README.md,72-72,1,a69d04b6,[`Release-NMS-Client/README.md`](Release-NMS-Client/README.md).
+docs,README.md,77-79,3,a69d04b6,"GPL-3.0 licensing. The NMS client add-on and quest scripts are MIT, with their original copyright"
+dynamic-items,common/CMakeLists.txt,337-337,1,44a10589,dynamic_item_structs.h
+dynamic-items,common/database/database_update_manifest_custom.cpp,777-813,37,44a10589,"// Dynamic (seeded, class-weighted) items. dynamic_items marks which items roll on purchase and"
+dynamic-items,common/database/database_update_manifest_custom.cpp,814-822,9,335be95c,"(1, 'hp', 1, 0, 360, 440, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,823-833,11,44a10589,"(1, 'skill_1hs_pct', 0, 100, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,834-842,9,335be95c,"(2, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,843-848,6,44a10589,"(2, 'skill_1hb_pct', 0, 100, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,849-858,10,335be95c,"(3, 'hp', 1, 0, 345, 422, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,859-869,11,44a10589,"(3, 'skill_1hs_pct', 0, 100, 2, 9, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,870-879,10,335be95c,"(4, 'hp', 1, 0, 345, 422, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,880-890,11,44a10589,"(4, 'skill_1hs_pct', 0, 100, 2, 9, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,891-900,10,335be95c,"(5, 'hp', 1, 0, 345, 422, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,901-913,13,44a10589,"(5, 'skill_1hs_pct', 0, 100, 2, 9, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,914-922,9,335be95c,"(6, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,923-929,7,44a10589,"(6, 'skill_1hb_pct', 0, 100, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,930-938,9,335be95c,"(7, 'hp', 1, 0, 360, 440, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,939-948,10,44a10589,"(7, 'skill_h2h_pct', 0, 250, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,949-958,10,335be95c,"(8, 'hp', 1, 0, 345, 422, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,959-971,13,44a10589,"(8, 'skill_1hs_pct', 0, 100, 2, 9, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,972-980,9,335be95c,"(9, 'hp', 1, 0, 360, 440, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,981-990,10,44a10589,"(9, 'skill_pierce_pct', 0, 250, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,991-999,9,335be95c,"(10, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1000-1007,8,44a10589,"(10, 'skill_1hb_pct', 0, 100, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1008-1016,9,335be95c,"(11, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1017-1021,5,44a10589,"(11, 'spell_fire_pct', 0, 100, 3, 15, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1022-1030,9,335be95c,"(12, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1031-1034,4,44a10589,"(12, 'spell_fire_pct', 0, 150, 3, 15, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1035-1043,9,335be95c,"(13, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1044-1047,4,44a10589,"(13, 'spell_fire_pct', 0, 200, 3, 15, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1048-1056,9,335be95c,"(14, 'hp', 1, 0, 300, 370, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1057-1060,4,44a10589,"(14, 'spell_magic_pct', 0, 200, 3, 15, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1061-1070,10,335be95c,"(15, 'hp', 1, 0, 345, 422, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1071-1082,12,44a10589,"(15, 'skill_h2h_pct', 0, 200, 2, 9, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1083-1091,9,335be95c,"(16, 'hp', 1, 0, 360, 440, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1092-1889,798,44a10589,"(16, 'skill_2hs_pct', 0, 100, 3, 12, 0),"
+dynamic-items,common/database/database_update_manifest_custom.cpp,1890-2299,410,f64b854e,// Dynamic item pool rebalanced to ~122% of best-in-slot for the 8 dynamic slots (rebalance_to_bis.py):
+dynamic-items,common/item_instance.cpp,168-169,2,44a10589,m_dynamic_stats       = copy.m_dynamic_stats;
+dynamic-items,common/item_instance.cpp,978-978,1,44a10589,
+dynamic-items,common/item_instance.cpp,979-979,1,446474fc,if ((identifier == DYNAMIC_SEED_KEY || identifier == DYNAMIC_ENCHANT_KEY) && dynamic_stats_hook) {
+dynamic-items,common/item_instance.cpp,980-1004,25,44a10589,dynamic_stats_hook(*this);
+dynamic-items,common/item_instance.h,118-120,3,44a10589,// Dynamic (seeded) items: zone installs a hook that builds this instance's rolled stats
+dynamic-items,common/item_instance.h,121-121,1,446474fc,"static constexpr const char *DYNAMIC_ENCHANT_KEY = ""dyn_ench""; // #reforge: the one line replaced (zone/dynami"
+dynamic-items,common/item_instance.h,122-132,11,44a10589,using DynamicStatsHook = void (*)(ItemInstance &inst);
+dynamic-items,common/item_instance.h,400-401,2,44a10589,bool             m_dynamic_stats{false};    // m_scaledItem holds rolled dynamic item stats
+dynamic-items,common/patches/rof.cpp,5185-5186,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/rof.cpp,5304-5304,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
+dynamic-items,common/patches/rof2.cpp,6444-6445,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/rof2.cpp,6571-6571,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
+dynamic-items,common/patches/sod.cpp,3604-3605,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/sod.cpp,3649-3649,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
+dynamic-items,common/patches/sof.cpp,2995-2996,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/sof.cpp,3039-3039,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
+dynamic-items,common/patches/titanium.cpp,3333-3334,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/titanium.cpp,3365-3365,1,44a10589,ob << '|' << itoa(inst->GetDisplayID() ? inst->GetDisplayID() : item->ID);
+dynamic-items,common/patches/uf.cpp,4484-4485,2,44a10589,// Dynamic items send their rolled stats; scaling items are scaled by the client itself
+dynamic-items,common/patches/uf.cpp,4567-4567,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
+dynamic-items,common/ruletypes.h,960-960,1,44a10589,"RULE_INT(Merchant, DynamicItemSellRefundPct, 20, ""Percent of the alternate currency cost refunded when selling"
+dynamic-items,common/ruletypes.h,1300-1311,12,cbeab1f6,// Dynamic item percent lines: caps on the character's total from all items and set bonuses
+dynamic-items,common/ruletypes.h,1314-1315,2,44a10589,"RULE_BOOL(Custom,   DynamicItemDisplayIds, 					true, ""Send each dynamic (seeded) item copy to clients under i"
+dynamic-items,zone/CMakeLists.txt,128-129,2,44a10589,dynamic_items.cpp
+dynamic-items,zone/CMakeLists.txt,154-154,1,44a10589,dynamic_items.h
+dynamic-items,zone/CMakeLists.txt,362-362,1,44a10589,gm_commands/dynamic_items.cpp
+dynamic-items,zone/CMakeLists.txt,437-437,1,446474fc,gm_commands/reforge.cpp
+dynamic-items,zone/bonuses.cpp,32-32,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/bonuses.cpp,43-43,1,cbeab1f6,
+dynamic-items,zone/bonuses.cpp,78-78,1,44a10589,dynamic_item_bonuses = {};
+dynamic-items,zone/bonuses.cpp,81-81,1,cbeab1f6,DynamicItemsManager::CapBonuses(dynamic_item_bonuses);
+dynamic-items,zone/bonuses.cpp,82-82,1,44a10589,"DynamicItemsManager::ApplySkillBonuses(dynamic_item_bonuses, &itembonuses);"
+dynamic-items,zone/bonuses.cpp,343-351,9,44a10589,// Dynamic (seeded) items: rolled flat stats are already on the item data above. Their
+dynamic-items,zone/bonuses.cpp,489-491,3,44a10589,// Dynamic items show their biggest skill affix as the Skill Mod for display only; their skill
+dynamic-items,zone/client.cpp,36-37,2,44a10589,"#include ""map.h"""
+dynamic-items,zone/client.cpp,94-94,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/client.h,63-63,1,44a10589,"#include ""../common/dynamic_item_structs.h"""
+dynamic-items,zone/client.h,286-286,1,44a10589,EQ::DynamicItemBonuses dynamic_item_bonuses;
+dynamic-items,zone/client.h,470-483,14,44a10589,void SendWindow(
+dynamic-items,zone/client_mods.cpp,29-29,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/client_mods.cpp,1618-1625,8,44a10589,"// Dynamic item instrument/singing %: a multiplier after the cap, so it stacks on top"
+dynamic-items,zone/client_packet.cpp,79-79,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/client_packet.cpp,2778-2782,5,44a10589,// Same class restriction as regular merchants (all of the character's classes on multiclass servers)
+dynamic-items,zone/client_packet.cpp,2790-2793,4,44a10589,"// The window's ""Show only items I can use"" filter checks the client's single (displayed)"
+dynamic-items,zone/client_packet.cpp,2800-2800,1,44a10589,item_ss << classes;
+dynamic-items,zone/client_packet.cpp,2884-2897,14,44a10589,// Dynamic items are single-class; HasClass checks every class on multiclass servers
+dynamic-items,zone/client_packet.cpp,2939-2948,10,44a10589,if (!inst) {
+dynamic-items,zone/client_packet.cpp,2953-2957,5,44a10589,if (dynamic_item) {
+dynamic-items,zone/client_packet.cpp,3063-3063,1,44a10589,uint32 full_cost = 0;
+dynamic-items,zone/client_packet.cpp,3083-3083,1,44a10589,full_cost = ml.alt_currency_cost;
+dynamic-items,zone/client_packet.cpp,3102-3106,5,44a10589,// Dynamic items refund a flat share of their price so selling and rebuying isn't a free reroll
+dynamic-items,zone/client_packet.cpp,3195-3195,1,44a10589,uint32 full_cost = 0;
+dynamic-items,zone/client_packet.cpp,3217-3217,1,44a10589,full_cost = ml.alt_currency_cost;
+dynamic-items,zone/client_packet.cpp,3235-3237,3,44a10589,else if (DynamicItemsManager::Instance()->IsDynamicItem(item->ID)) {
+dynamic-items,zone/client_packet.cpp,9594-9598,5,44a10589,// Links to dynamic items carry that copy's display ID; rebuild the copy from its seed so the
+dynamic-items,zone/client_packet.cpp,9599-9600,2,446474fc,std::string dynamic_enchant;
+dynamic-items,zone/client_packet.cpp,9601-9606,6,44a10589,"Message(Chat::White, ""That item's details aren't available in this zone."");"
+dynamic-items,zone/client_packet.cpp,9607-9609,3,446474fc,if (!dynamic_enchant.empty()) {
+dynamic-items,zone/client_packet.cpp,9610-9616,7,44a10589,"DynamicItemsManager::SetSeed(*dynamic_inst, dynamic_seed);"
+dynamic-items,zone/client_packet.cpp,9677-9677,1,44a10589,EQ::ItemInstance* inst = database.CreateItem(DynamicItemsManager::Instance()->ResolveItemId(item->item_id));
+dynamic-items,zone/client_packet.cpp,9694-9694,1,44a10589,if ((item = database.GetItem(DynamicItemsManager::Instance()->ResolveItemId(p->item_id))) != nullptr) {
+dynamic-items,zone/client_packet.cpp,9709-9709,1,44a10589,const EQ::ItemData* item = database.GetItem(DynamicItemsManager::Instance()->ResolveItemId(ips->itemid));
+dynamic-items,zone/client_packet.cpp,9887-9887,1,44a10589,const EQ::ItemData* item = database.GetItem(DynamicItemsManager::Instance()->ResolveItemId(ips->itemid));
+dynamic-items,zone/client_packet.cpp,14020-14026,7,44a10589,// Dynamic items only roll their stats when bought for alternate currency (Handle_OP_AltCurrencyPurchase);
+dynamic-items,zone/client_packet.cpp,16066-16072,7,cbeab1f6,// Texture and tint too: on zone-in the client reports its gear's base look before it applies
+dynamic-items,zone/command.cpp,126-127,2,44a10589,"command_add(""dyninfo"", ""Show the rolled stats of the dynamic items you are carrying"", AccountStatus::Player, c"
+dynamic-items,zone/command.cpp,206-206,1,446474fc,"command_add(""reforge"", ""Reforge one random line of a dynamic item at the Chronal Artificer in The Void. Use wi"
+dynamic-items,zone/command.h,82-83,2,44a10589,"void command_dyninfo(Client *c, const Seperator *sep);"
+dynamic-items,zone/command.h,160-160,1,446474fc,"void command_reforge(Client *c, const Seperator *sep);"
+dynamic-items,zone/effects.cpp,32-32,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/effects.cpp,168-172,5,44a10589,"// Dynamic item element damage %, applied to the base so focuses and crits build on it"
+dynamic-items,zone/effects.cpp,437-441,5,44a10589,// Dynamic item element damage % (same as direct damage)
+dynamic-items,zone/effects.cpp,665-669,5,44a10589,"// Dynamic item healing %, applied to the base so focuses and crits build on it"
+dynamic-items,zone/main.cpp,92-92,1,44a10589,"#include ""dynamic_items.h"""
+dynamic-items,zone/main.cpp,397-401,5,44a10589,// Load dynamic (seeded) item definitions
+framework,common/version.h,47-47,1,446474fc,#define CUSTOM_BINARY_DATABASE_VERSION 37
+framework,zone/client.h,648-648,1,1b885295,bool PassesMerchantBucket(const MerchantList& ml);
+framework,zone/client_packet.cpp,2783-2787,5,1b885295,"// Bucket gates (e.g. rift tier gear unlocks) apply here too, not just on regular merchants"
+framework,zone/client_packet.cpp,2853-2856,4,1b885295,if (!PassesMerchantBucket(ml)) {
+framework,zone/client_process.cpp,1114-1132,19,1b885295,// A merchantlist row with bucket_name/bucket_value only shows (and sells) once the character's own
+framework,zone/client_process.cpp,1159-1161,3,1b885295,if (!PassesMerchantBucket(ml)) {
+gear-sets,common/database/database_update_manifest_custom.cpp,2300-2313,14,6122838f,"// Armor set bonuses can grant a spell: a worn effect, a weapon proc or a spell-cast (sympathetic) proc"
+gear-sets,common/database/database_update_manifest_custom.cpp,2564-2583,20,446474fc,ManifestEntry{
+gear-sets,common/ruletypes.h,1316-1317,2,f64b854e,"RULE_STRING(Custom, ArmorSetTierVisuals, 					""13,15,17,12"", ""Spell effects shown on armor set tier changes: t"
+gear-sets,zone/CMakeLists.txt,363-363,1,446474fc,gm_commands/gear.cpp
+gear-sets,zone/bonuses.cpp,80-80,1,44a10589,CheckArmorSetBonuses(&itembonuses); // before ApplySkillBonuses: set bonuses can add dynamic affixes
+gear-sets,zone/client.cpp,15267-15286,20,44a10589,// Define Global Maps
+gear-sets,zone/client.cpp,15287-15287,1,6122838f,"auto results_bonuses = database.QueryDatabase(""SELECT set_id, min_pieces, class_mask, stat_id, stat_value, aff"
+gear-sets,zone/client.cpp,15288-15296,9,44a10589,if (results_bonuses.Success()) {
+gear-sets,zone/client.cpp,15297-15299,3,6122838f,bonus.spell_id   = static_cast<uint16>(atoi(row[6]));
+gear-sets,zone/client.cpp,15300-15300,1,0007bdd0,if (bonus.spell_id && (!IsValidSpell(bonus.spell_id) || bonus.spell_type < ArmorSetSpellWorn || bonus.spell_ty
+gear-sets,zone/client.cpp,15301-15303,3,6122838f,"LogError(""armor_set_bonuses set [{}] has invalid spell [{}] type [{}], skipping"", set_id, bonus.spell_id, bonu"
+gear-sets,zone/client.cpp,15304-15319,16,44a10589,if (row[5] && row[5][0]) {
+gear-sets,zone/client.cpp,15320-15320,1,f64b854e,"std::unordered_map<uint32, uint32> Client::CountEquippedArmorSetPieces() {"
+gear-sets,zone/client.cpp,15321-15336,16,44a10589,"std::unordered_map<uint32, uint32> equipped_set_counts;"
+gear-sets,zone/client.cpp,15337-15337,1,be88faa1,// Jewelry & Accessories (9)
+gear-sets,zone/client.cpp,15338-15339,2,44a10589,"EQ::invslot::slotEar1,"
+gear-sets,zone/client.cpp,15340-15340,1,be88faa1,"EQ::invslot::slotFace,"
+gear-sets,zone/client.cpp,15341-15342,2,44a10589,"EQ::invslot::slotNeck,"
+gear-sets,zone/client.cpp,15343-15343,1,be88faa1,"EQ::invslot::slotBack,"
+gear-sets,zone/client.cpp,15344-15370,27,44a10589,"EQ::invslot::slotFinger1,"
+gear-sets,zone/client.cpp,15371-15379,9,f64b854e,return equipped_set_counts;
+gear-sets,zone/client.cpp,15380-15382,3,6122838f,// Spell bonuses are rebuilt on every recalculation; weapon procs are synced after the loop
+gear-sets,zone/client.cpp,15383-15383,1,0007bdd0,m_set_bonus_focus.clear();
+gear-sets,zone/client.cpp,15384-15384,1,6122838f,
+gear-sets,zone/client.cpp,15385-15406,22,44a10589,// Process stats and state transitions for each active set
+gear-sets,zone/client.cpp,15407-15416,10,f64b854e,"// Custom:ArmorSetTierVisuals = ""tier 1,tier 2,tier 3,tier lost"" spell effect ids (0 = none)"
+gear-sets,zone/client.cpp,15417-15418,2,44a10589,if (new_tier > current_tier) {
+gear-sets,zone/client.cpp,15419-15419,1,f64b854e,visual_spell_id = visual(new_tier - 1);
+gear-sets,zone/client.cpp,15420-15424,5,44a10589,// Send upgrade message in chat (Yellow text = CC_Yellow / 15)
+gear-sets,zone/client.cpp,15425-15426,2,f64b854e,// Losing a tier
+gear-sets,zone/client.cpp,15427-15459,33,44a10589,if (new_tier > 0) {
+gear-sets,zone/client.cpp,15460-15471,12,6122838f,if (bonus.spell_id) {
+gear-sets,zone/client.cpp,15472-15481,10,0007bdd0,case ArmorSetSpellFocus:
+gear-sets,zone/client.cpp,15482-15485,4,6122838f,}
+gear-sets,zone/client.cpp,15486-15534,49,44a10589,switch (bonus.stat_id) {
+gear-sets,zone/client.cpp,15535-15550,16,6122838f,"// Weapon procs from set bonuses: drop the ones no longer earned, (re)add the earned ones that are missing"
+gear-sets,zone/client.cpp,15551-15551,1,44a10589,}
+gear-sets,zone/client.h,38-39,2,44a10589,
+gear-sets,zone/client.h,127-127,1,44a10589,
+gear-sets,zone/client.h,278-278,1,44a10589,void CheckArmorSetBonuses(StatBonuses* itembonuses);
+gear-sets,zone/client.h,279-279,1,f64b854e,"std::unordered_map<uint32, uint32> CountEquippedArmorSetPieces(); // set id -> pieces worn that count for this"
+gear-sets,zone/client.h,280-280,1,44a10589,"std::unordered_map<uint32, uint32> m_active_armor_set_tiers;"
+gear-sets,zone/client.h,281-281,1,6122838f,"std::vector<uint16> m_set_bonus_sympathetic; // active set bonus spell-cast procs, rebuilt by CheckArmorSetBon"
+gear-sets,zone/client.h,282-282,1,0007bdd0,"std::vector<uint16> m_set_bonus_focus;       // active set bonus focus spells, rebuilt by CheckArmorSetBonuses"
+gear-sets,zone/client.h,283-284,2,6122838f,"std::set<uint16>    m_set_bonus_procs;       // weapon procs added by set bonuses, so they can be removed"
+gear-sets,zone/client.h,285-285,1,0007bdd0,const std::vector<uint16> &GetSetBonusFocusSpells() const { return m_set_bonus_focus; }
+gear-sets,zone/client.h,2378-2379,2,44a10589,
+gear-sets,zone/client.h,2688-2701,14,44a10589,// --- Global Structs & Maps (OUTSIDE class Client) ---
+gear-sets,zone/client.h,2702-2710,9,6122838f,uint16 spell_id   = 0;                      // set: the bonus is a spell instead (see spell_type)
+gear-sets,zone/client.h,2711-2711,1,0007bdd0,"ArmorSetSpellFocus       = 4, // focus effect (pet power, etc.), checked like an equipped item's focus"
+gear-sets,zone/client.h,2712-2720,9,44a10589,};
+gear-sets,zone/command.cpp,147-147,1,446474fc,"command_add(""gear"", ""[list|show #|load #] - Your full gear sets, saved with the Bandolier window"", AccountStat"
+gear-sets,zone/command.h,84-84,1,446474fc,"void command_gear(Client *c, const Seperator *sep);"
+gear-sets,zone/inventory.cpp,32-32,1,446474fc,"#include ""gear_sets.h"""
+gear-sets,zone/inventory.cpp,4145-4147,3,446474fc,// Full gear sets: also remember every worn slot
+gear-sets,zone/inventory.cpp,4160-4160,1,446474fc,"GearSetDelete(this, bds->Number);"
+gear-sets,zone/inventory.cpp,4310-4312,3,446474fc,// Full gear sets: the client has moved the weapons; the server moves the rest and tells the client
+gear-sets,zone/spell_effects.cpp,7023-7039,17,6122838f,// Armor set bonus spell-cast procs: checked like an item focus with no proc rate of its own
+gear-sets,zone/spell_effects.cpp,7327-7357,31,0007bdd0,if (IsClient()) {
+gear-sets,zone/zone.cpp,1262-1267,6,44a10589,"LogInfo(""Loading Armor Set Bonuses..."");"
+glamour,common/ruletypes.h,1320-1320,1,f64b854e,"RULE_BOOL(Custom,   BlockGlamourResale,					true, ""Merchants refuse to buy \""Glamour - '...'\"" ornaments (they"
+glamour,zone/client_packet.cpp,14253-14254,2,335be95c,// NMS: glamours carry a purchase price for the glamour vendors but have no resale value; the Purveyor
+glamour,zone/client_packet.cpp,14255-14255,1,f64b854e,"if (RuleB(Custom, BlockGlamourResale) && Strings::BeginsWith(item->Name, ""Glamour - "")) {"
+glamour,zone/client_packet.cpp,14256-14259,4,335be95c,"Message(Chat::MerchantExchange, ""%s tells you, 'I have no use for glamours.'"", vendor->GetCleanName());"
+greater-rifts,README.md,18-18,1,9a572a32,"| Greater Rifts | Timed, randomized instances in 26 classic dungeons, tiers 1 to 500, opened by Zebuxoruk in T"
+greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,10-31,22,862e1226,"-- Instance ids get reused, so the warder flag stores the instance's end time and only counts"
+greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,178-178,1,862e1226,warder_instance_status	= get_warder_status();
+greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,212-212,1,862e1226,"eq.set_data(warder_flag_key(), tostring(warder_flag_value()),""H6"");"
+greater-rifts,Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua,232-232,1,862e1226,warder_instance_status	= get_warder_status()
+hailstone,common/emu_oplist.h,645-648,4,939a7501,"N(OP_PersonalLootList),"
+hailstone,common/eq_packet_structs.h,1646-1695,50,939a7501,"// The same offers for Hailstone's NMS add-on (projecthailstone/hailstone-nms nms_packets.h), whose Personal L"
+hailstone,utils/patches/patch_RoF2.conf,750-753,4,939a7501,OP_PersonalLootList=0x1410
+hailstone,zone/client.h,1057-1058,2,939a7501,inline bool GetNmsPersonalLootWindow() const { return m_nms_personal_loot_window; }
+hailstone,zone/client.h,2363-2363,1,939a7501,"bool m_nms_personal_loot_window = false; // said Hello in this zone: Hailstone's loot window, not OP_NmsLootOf"
+hailstone,zone/client_packet.cpp,442-442,1,939a7501,ConnectedOpcodes[OP_PersonalLootAction] = &Client::Handle_OP_PersonalLootAction;
+hailstone,zone/client_packet.cpp,17317-17321,5,939a7501,void Client::Handle_OP_PersonalLootAction(const EQApplicationPacket *app)
+hailstone,zone/client_packet.h,336-336,1,939a7501,void Handle_OP_PersonalLootAction(const EQApplicationPacket *app);
+instances,Release-NMS-Plugins/NMS_instance_utils.pl,5-7,3,e20710da,# Scale expedition instance NPCs by member count (see ScaleInstanceNPC). 0 = off: NPCs keep their normal stats
+instances,Release-NMS-Plugins/NMS_instance_utils.pl,14-14,1,7c3179a2,my $non_respawning_duration = 6 * 60 * 60; # 6 Hours
+instances,Release-NMS-Plugins/NMS_instance_utils.pl,15-15,1,1cfc64c3,my $respawning_duration =  5 * 60; # 5 minutes
+instances,Release-NMS-Plugins/NMS_instance_utils.pl,116-117,2,e20710da,return if !$SCALE_INSTANCE_NPCS;
+instances,Release-NMS-Quests/potimea/player.lua,41-41,1,ef751cea,expedition:AddReplayLockout(6 * 60 * 60) -- 6 Hours
+instances,Release-NMS-Quests/potimea/player.lua,44-44,1,ef751cea,"eq.set_data(expedition_identifier, ""0"", ""6H"")"
+loot-offers,common/emu_oplist.h,643-644,2,cbeab1f6,"N(OP_NmsLootOffer),"
+loot-offers,common/eq_packet_structs.h,1605-1617,13,cbeab1f6,// /nmsloot personal loot offers. Layouts match the installed 3.5 MB dinput8.dll (Rockin-Vik/NMS-Release).
+loot-offers,common/eq_packet_structs.h,1618-1619,2,20cc612d,"// The add-on saves the first field as the ItemID of its sell/keep rules and matches new drops on it,"
+loot-offers,common/eq_packet_structs.h,1620-1621,2,cbeab1f6,struct NmsLootOfferEntry_Struct
+loot-offers,common/eq_packet_structs.h,1622-1622,1,20cc612d,uint32 item_id;
+loot-offers,common/eq_packet_structs.h,1623-1624,2,cbeab1f6,uint32 icon;
+loot-offers,common/eq_packet_structs.h,1625-1625,1,20cc612d,uint32 offer_id;
+loot-offers,common/eq_packet_structs.h,1626-1634,9,cbeab1f6,uint8  bonus;
+loot-offers,common/eq_packet_structs.h,1635-1636,2,20cc612d,uint32 offer_id; // echo of entry+12
+loot-offers,common/eq_packet_structs.h,1637-1645,9,cbeab1f6,uint8  action;
+loot-offers,common/ruletypes.h,1312-1312,1,e20710da,"RULE_BOOL(Custom,   NmsLootEmptyGroupCorpse,				true, ""When /nmsloot offers go to 2 or more players, remove th"
+loot-offers,common/ruletypes.h,1313-1313,1,e8e876e9,"RULE_BOOL(Custom,   NmsLootEmptySoloCorpse,					false, ""When /nmsloot offers go to a lone player, remove the c"
+loot-offers,utils/patches/patch_RoF2.conf,748-749,2,cbeab1f6,OP_NmsLootOffer=0x140A
+loot-offers,zone/attack.cpp,2930-2944,15,3be364b1,// /nmsloot: personal loot rolls for the credited client and their group/raid in this zone
+loot-offers,zone/attack.cpp,2947-2947,1,3be364b1,if (item != nullptr && !(nms_loot_empties_corpse && item->lootdrop_id)) {
+loot-offers,zone/attack.cpp,3205-3206,2,cbeab1f6,"NmsLootOfferOnCorpseCreated(corpse, nms_loot_credit, this);"
+loot-offers,zone/client_packet.cpp,441-441,1,cbeab1f6,ConnectedOpcodes[OP_NmsLootDecision] = &Client::Handle_OP_NmsLootDecision;
+loot-offers,zone/client_packet.cpp,10842-10842,1,cbeab1f6,"NmsLootOfferOnCorpseOpen(this, ent->CastToCorpse());"
+loot-offers,zone/client_packet.cpp,17312-17316,5,cbeab1f6,void Client::Handle_OP_NmsLootDecision(const EQApplicationPacket *app)
+loot-offers,zone/client_packet.h,335-335,1,cbeab1f6,void Handle_OP_NmsLootDecision(const EQApplicationPacket *app);
+loot-offers,zone/corpse.cpp,9-11,3,cbeab1f6,#include <process.h>
+loot-offers,zone/corpse.cpp,40-43,4,cbeab1f6,"#include ""nms_loot_offers.h"""
+loot-offers,zone/corpse.cpp,47-70,24,cbeab1f6,namespace {
+loot-offers,zone/corpse.cpp,218-218,1,cbeab1f6,m_nms_loot_serial = NextNmsLootSerial();
+loot-offers,zone/corpse.cpp,320-320,1,cbeab1f6,m_nms_loot_serial           = NextNmsLootSerial();
+loot-offers,zone/corpse.cpp,443-443,1,cbeab1f6,m_nms_loot_serial = NextNmsLootSerial();
+loot-offers,zone/corpse.cpp,638-638,1,cbeab1f6,m_nms_loot_serial = NextNmsLootSerial();
+loot-offers,zone/corpse.cpp,938-938,1,cbeab1f6,"void Corpse::RemoveItem(LootItem *item_data, bool forget_offers)"
+loot-offers,zone/corpse.cpp,945-953,9,cbeab1f6,if (forget_offers) {
+loot-offers,zone/corpse.h,162-164,3,cbeab1f6,"void RemoveItem(LootItem *item_data, bool forget_offers = true);"
+loot-offers,zone/corpse.h,299-299,1,cbeab1f6,uint64                   m_nms_loot_serial = 0;
+loot-offers,zone/loot.cpp,342-361,20,cbeab1f6,// RollIndependentLoot: collect the roll for /nmsloot instead of adding it to this NPC
+loot-offers,zone/npc.h,227-227,1,cbeab1f6,void RollIndependentLoot(LootItems &out); // /nmsloot: roll this NPC's tables into out without touching its ow
+loot-offers,zone/npc.h,731-731,1,cbeab1f6,LootItems *m_loot_item_sink = nullptr; // set only during RollIndependentLoot
+multiclass-bard,zone/client.cpp,12280-12298,19,f6852ed9,"// Multiclass characters all store Bard as their base class, so check every class they have"
+multiclass-bard,zone/client.cpp,12301-12301,1,f6852ed9,if (!any_class_usable) {
+paragon-aa,common/ruletypes.h,1352-1363,12,446474fc,"// Platinum and AA sinks: Chronal Tributes, Paragon AAs, reforging dynamic items (zone/nms_chronal_tribute.cpp"
+paragon-aa,zone/CMakeLists.txt,106-108,3,446474fc,gear_sets.cpp
+paragon-aa,zone/CMakeLists.txt,157-159,3,446474fc,gear_sets.h
+paragon-aa,zone/aa.cpp,32-34,3,446474fc,"#include ""nms_paragon.h"""
+paragon-aa,zone/aa.cpp,1070-1071,2,446474fc,// Server-only effects (Paragon heroic stats) aren't sent; the client has no such spell effect
+paragon-aa,zone/aa.cpp,1085-1087,3,446474fc,if (NmsIsParagonSpa(effect.effect_id)) {
+paragon-aa,zone/bonuses.cpp,41-42,2,446474fc,"#include ""nms_paragon.h"""
+paragon-aa,zone/bonuses.cpp,83-83,1,446474fc,"NmsParagonApplyBonuses(this, &itembonuses); // AA heroic stats count as item heroics"
+paragon-aa,zone/mob.h,1522-1522,1,446474fc,"const std::unordered_map<uint32, std::pair<uint32, uint32>> &GetAAs() const { return aa_ranks; } // ability id"
+pet-power,common/ruletypes.h,297-297,1,0007bdd0,"RULE_BOOL(Pets, ScaleExcessPetPower, true, ""Pet power above the strongest pets table row for a pet type scales"
+pet-power,zone/pets.cpp,324-333,10,0007bdd0,"// If pet power is set to -1 in the DB, use stat scaling. With Pets:ScaleExcessPetPower, power past the"
+pet-power,zone/pets.cpp,335-335,1,0007bdd0,float scale_power = (float)scaled_power / 100.0f;
+pet-power,zone/pets.cpp,341-341,1,0007bdd0,"npc_type->level += 1 + ((int)scaled_power / 25) > npc_type->level + RuleR(Pets, PetPowerLevelCap) ? RuleR(Pets"
+platform,README.md,62-62,1,d260a8cb,## Database
+platform,README.md,64-69,6,d260a8cb,"`Release-NMS-Server/database/voidforged-content.zip` is a snapshot of the live world content: items,"
+platform,README.md,71-71,1,d260a8cb,"The base setup (quests, client data files, client add-on) is the same as the NMS release; see [`Release-NMS-Se"
+platform,common/eqemu_logsys_log_aliases.h,24-25,2,217680ec,// Looked up on each use: a global pointer can still be null when a static initializer logs (crashed zone on L
+platform,common/repositories/spells_new_repository.h,47-50,4,e781443f,// Spells at or above this stay server-only. IDs in the 50000s in the client's spells_us.txt stop spell
+platform,common/repositories/spells_new_repository.h,57-57,1,e781443f,"""SELECT CONCAT_WS('^', {}) FROM {} WHERE {} < {} ORDER BY {} ASC"","
+platform,common/repositories/spells_new_repository.h,60-61,2,e781443f,"PrimaryKey(),"
+platform,common/repositories/spells_new_repository.h,105-105,1,e781443f,"""SELECT CONCAT_WS('^', {}) FROM {} WHERE {} < {} ORDER BY {} ASC"","
+platform,common/repositories/spells_new_repository.h,108-109,2,e781443f,"PrimaryKey(),"
+platinum-economy,Release-NMS-Plugins/SpendEOM.pl,2-6,5,7c3179a2,"# Echo of Memory was removed (2026-10-25): services that cost Echoes now cost platinum, 1 Echo = 1,000pp."
+platinum-economy,Release-NMS-Plugins/SpendEOM.pl,9-11,3,7c3179a2,sub HasPlatinum {
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,46-46,1,7c3179a2,my $platinum_alt_cost     = 1000;
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,116-116,1,7c3179a2,"""Do you want to ["" . quest::saylink(""confirm_name_change-0"", 1, ""pay with Platinum"") . ""]?"""
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,128-128,1,7c3179a2,"my $success = $client->TakeMoneyFromPP($platinum_alt_cost * $name_change_cost * 1000, 1);"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,165-165,1,7c3179a2,"""Do you want to ["" . quest::saylink(""confirm_race_$race_id-0"", 1, ""pay with Platinum"") . ""]?"""
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,173-173,1,7c3179a2,"my $success = $client->TakeMoneyFromPP($platinum_alt_cost * $race_change_cost * 1000, 1);"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,194-194,1,7c3179a2,"$reply .= "" With a mere "" . commaify($platinum_alt_cost * $gods_change_cost) . ""pp, I can formalize your new a"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,213-213,1,7c3179a2,"""Do you want to ["" . quest::saylink(""confirm_deity_$deity_id-0"", 1, ""pay with Platinum"") . ""]?"""
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,220-220,1,7c3179a2,"my $success = $client->TakeMoneyFromPP($platinum_alt_cost * $gods_change_cost * 1000, 1);"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,234-234,1,7c3179a2,"""For a mere "" . commaify($platinum_alt_cost * $sex_change_cost) . ""pp, I can adjust your form."";"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,240-240,1,7c3179a2,"quest::saylink(""confirm_gender_$new_gender-0"", 1, ""pay with Platinum"") ."
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,248-248,1,7c3179a2,"my $success = $client->TakeMoneyFromPP($platinum_alt_cost * $sex_change_cost * 1000, 1);"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,268-268,1,7c3179a2,"""For a mere "" . commaify($platinum_alt_cost * $pet_name_reset_cost) . ""pp, you can give your pet a brand-new i"
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,293-293,1,7c3179a2,"quest::saylink(""confirm_pet_name_change_$class_id-0"", 1, ""pay with Platinum"") ."
+platinum-economy,Release-NMS-Quests/bazaar/151061.pl,307-307,1,7c3179a2,"my $success = $client->TakeMoneyFromPP($platinum_alt_cost * $pet_name_reset_cost * 1000, 1);"
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,17-17,1,7c3179a2,"$response = ""In exchange for platinum, I can enchant the entire world! Each should co-exist with over versions"
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,19-22,4,7c3179a2,"In order to enhance [Experience Gain] or [Movement Speed], I will require 5,000 platinum."
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,26-26,1,7c3179a2,$cost = 5000;
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,30-30,1,7c3179a2,$cost = 5000;
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,34-34,1,7c3179a2,$cost = 20000;
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,38-38,1,7c3179a2,$cost = 10000;
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,42-42,1,7c3179a2,$cost = 35000;
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,46-46,1,7c3179a2,"if (plugin::SpendPlatinum($client, $cost)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Apocrypha.pl,53-53,1,7c3179a2,"$response = ""You do not have enough platinum to afford that."";"
+platinum-economy,Release-NMS-Quests/bazaar/Purveyor_of_Glamour.pl,104-104,1,7c3179a2,"for 2,000 platinum, however. Would you like me to produce a $link_random_glamour for you?"
+platinum-economy,Release-NMS-Quests/bazaar/Purveyor_of_Glamour.pl,111-112,2,7c3179a2,"if (!plugin::HasPlatinum($client, 2000)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Purveyor_of_Glamour.pl,116-116,1,7c3179a2,"if ($random_result && plugin::SpendPlatinum($client, 2000)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Tearel.pl,1-60,60,7c3179a2,sub EVENT_SAY {
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,11-12,2,7c3179a2,my $remove_class_cost = 10000; # platinum
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,226-227,2,7c3179a2,"if (plugin::HasPlatinum($client, $reset_aa_cost)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,231-231,1,7c3179a2,"plugin::YellowText(""It costs $reset_aa_cost platinum in order to reset your AA."");"
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,236-236,1,7c3179a2,"if (plugin::SpendPlatinum($client, $reset_aa_cost)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,258-259,2,7c3179a2,"if (plugin::HasPlatinum($client, $remove_class_cost)) {"
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,264-264,1,7c3179a2,"plugin::YellowText(""It costs $remove_class_cost platinum in order to remove a class."");"
+platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,279-279,1,7c3179a2,"if (plugin::SpendPlatinum($client, $remove_class_cost)) {"
+platinum-economy,Release-NMS-Quests/cshome/Apocrypha.pl,1-180,180,7c3179a2,# Basic Design
+platinum-economy,Release-NMS-Quests/ecommons/Son_of_Tearel.pl,1-60,60,7c3179a2,sub EVENT_SAY {
+platinum-economy,zone/loot.cpp,774-797,24,cbeab1f6,void NPC::RollIndependentLoot(LootItems &out)
+qol,Release-NMS-Quests/global/spells/5824.pl,14-14,1,763f5111,# Arrival spot in zone 151 (Bazaar)
+qol,Release-NMS-Quests/global/spells/5824.pl,16-16,1,763f5111,"'Arrival'       => [-85.32, -812.10, 3.13, 385.75],"
+qol,Release-NMS-Quests/global/spells/5824.pl,49-50,2,763f5111,# Bazaar arrivals face the spot's heading; East Commons stays random
+qol,common/ruletypes.h,1018-1018,1,cbeab1f6,"RULE_INT(AA, UnusedAAPointCap, -1, ""Cap for Unused AA Points.  Default: -1.  NOTE: DO NOT LOWER THIS WITHOUT K"
+qol,common/ruletypes.h,1290-1293,4,cbeab1f6,// Hybrids: auto-attack and auto-fire keep swinging while a (non-bard) spell is being cast
+qol,common/ruletypes.h,1318-1319,2,e8e876e9,"RULE_BOOL(Custom,   AutoScribeSpells, 						false, ""On level-up and login, scribe every spell the character's "
+qol,zone/attack.cpp,2766-2767,2,44a10589,"const bool kill_faction_hits = RuleB(Custom, KillFactionHits);"
+qol,zone/attack.cpp,2809-2809,1,44a10589,"if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {"
+qol,zone/attack.cpp,2838-2838,1,44a10589,"if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {"
+qol,zone/attack.cpp,2868-2868,1,44a10589,"if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {"
+qol,zone/client.cpp,13776-13790,15,f64b854e,// Highest cap for a skill at a level among the character's classes (all of them when multiclassing)
+qol,zone/client.cpp,13793-13796,4,f64b854e,for (const auto &s : EQ::skills::GetSkillTypeMap()) {
+qol,zone/client.cpp,13798-13802,5,f64b854e,if (GetRawSkill(s.first) < cap) {
+qol,zone/client.cpp,13804-13808,5,f64b854e,"// Level-up and login: skills (not tradeskills) to their caps for the current level, plus every spell and"
+qol,zone/client.cpp,13810-13825,16,f64b854e,"if (RuleB(Custom, AutoTrainSkills)) {"
+qol,zone/client.cpp,13829-13830,2,f64b854e,if (trained) {
+qol,zone/client.cpp,13832-13840,9,f64b854e,}
+qol,zone/client.h,1067-1068,2,f64b854e,"uint16 GetHighestClassSkillCap(EQ::skills::SkillType skill, uint8 level);"
+qol,zone/client_packet.cpp,1068-1068,1,f64b854e,"AutoLearnForLevel(); // catches up characters from before it was on, or a rule change"
+qol,zone/client_process.cpp,368-368,1,cbeab1f6,"&& (RuleB(Custom, AllowAttackWhileCasting) || !(spellend_timer.Enabled() && casting_spell_id && !IsBardSong(ca"
+qol,zone/command.cpp,483-493,11,65f5fe6f,// A top-level alias of a sub command (#fz for #find zone) uses that sub command's access
+qol,zone/exp.cpp,1418-1418,1,f64b854e,const bool leveled_up = set_level > m_pp.level;
+qol,zone/exp.cpp,1421-1424,4,f64b854e,if (leveled_up) {
+qol,zone/gm_commands/zone.cpp,3-3,1,65f5fe6f,"#include ""../../common/repositories/doors_repository.h"""
+qol,zone/gm_commands/zone.cpp,58-85,28,65f5fe6f,"// players need the key that the zone's locked entrance door asks for (Sleeper's Tomb, Vex Thal, the Mire)"
+qol,zone/gm_commands/zone.cpp,98-107,10,65f5fe6f,"// coordinates: players always land at the safe spot, so they can't skip past locked doors"
+qol,zone/special_attacks.cpp,1313-1313,1,cbeab1f6,"(!RuleB(Custom, AllowAttackWhileCasting) && IsCasting() && !IsBardSong(casting_spell_id)) ||"
+qol,zone/special_attacks.cpp,1948-1948,1,cbeab1f6,"(!RuleB(Custom, AllowAttackWhileCasting) && IsCasting() && !IsBardSong(casting_spell_id)) ||"
+qol,zone/spell_effects.cpp,3999-3999,1,5aa84dad,if (caster == client || (client->GetGroup() && client->GetGroup()->IsGroupMember(caster))) {
+qol,zone/spell_effects.cpp,4407-4408,2,e013e1be,"// A held buff doesn't count down, so a fade started here would stick at 3 tics"
+qol,zone/spell_effects.cpp,4431-4431,1,e013e1be,"if (!IsBardSong(buff.spellid) && !IsGroupSuspendableBuff(buff.spellid, buff)) {"
+strike-aa,zone/attack.cpp,6901-6908,8,763f5111,else if (hit.skill == EQ::skills::SkillFrenzy && (HasClass(Class::Berserker))) {
+strike-aa,zone/mob.h,255-255,1,763f5111,"int TryDecapitation(Mob* defender, EQ::skills::SkillType skillInUse);"
+strike-aa,zone/special_attacks.cpp,2707-2752,46,763f5111,"// Berserker Decapitation: Headshot for Frenzy. The server has no Decapitation spell effect, so the level cap "
+triptych-aa,common/ruletypes.h,1294-1299,6,028ecbcb,// AA spell damage stacking. Ported from Triptych.
+triptych-aa,zone/aa.cpp,569-577,9,028ecbcb,if (slot_id >= MAX_PP_AA_ARRAY) {
+triptych-aa,zone/aa.cpp,1117-1117,1,028ecbcb,"// 589 (Destruction), 5003 (Frantic Infusion), 7019 (Cataclysm) are buyable burns"
+triptych-aa,zone/aa.cpp,1163-1171,9,028ecbcb,if (i >= MAX_PP_AA_ARRAY) {
+triptych-aa,zone/aa.cpp,1698-1703,6,028ecbcb,// Directional cones fire from the caster's facing and ignore the spell target.
+triptych-aa,zone/aa.cpp,1845-1853,9,028ecbcb,if (slot_id >= MAX_PP_AA_ARRAY) {
+triptych-aa,zone/aa.cpp,1984-1984,1,028ecbcb,if (rank->base_ability->first_rank_id == aaFuryofMagic && rank->id > 772) {
+triptych-aa,zone/attack.cpp,240-240,1,028ecbcb,if (skill == EQ::skills::SkillArchery || skill == EQ::skills::SkillThrowing) {
+triptych-aa,zone/attack.cpp,5757-5757,1,028ecbcb,"critMod = std::max(critMod, 100);"
+triptych-aa,zone/attack.cpp,5783-5783,1,028ecbcb,} else if ((HasClass(Class::Ranger) || HasClass(Class::Rogue)) && GetLevel() >= 12) {
+triptych-aa,zone/attack.cpp,6837-6837,1,028ecbcb,(hit.skill == EQ::skills::SkillThrowing && !HasClass(Class::Berserker)))
+triptych-aa,zone/attack.cpp,6876-6881,6,028ecbcb,else if (hit.skill == EQ::skills::SkillThrowing) {
+triptych-aa,zone/bonuses.cpp,1225-1230,6,028ecbcb,newbon->AACritDmgNoStackSum += limit_value;
+triptych-aa,zone/common.h,426-426,1,028ecbcb,int32	AACritDmgNoStackSum;				// additive sum of AA SPA 294 crit dmg components (for rule-based stacking)
+triptych-aa,zone/effects.cpp,88-103,16,028ecbcb,int Mob::GetAACritDmgNoStackPool() {
+triptych-aa,zone/effects.cpp,107-110,4,028ecbcb,"if (RuleB(Custom, AACritDmgNoStackComponentsStack)) {"
+triptych-aa,zone/effects.cpp,542-545,4,028ecbcb,"if (RuleB(Custom, DoTCritsShareNoStackPool)) {"
+triptych-aa,zone/mob.h,375-375,1,028ecbcb,int GetAACritDmgNoStackPool();
+triptych-aa,zone/special_attacks.cpp,93-93,1,028ecbcb,return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
+triptych-aa,zone/special_attacks.cpp,95-95,1,028ecbcb,return base + static_cast<int>(ac_bonus + skill_bonus);
+triptych-aa,zone/special_attacks.cpp,115-115,1,028ecbcb,return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
+triptych-aa,zone/special_attacks.cpp,117-117,1,028ecbcb,return base + static_cast<int>(ac_bonus + skill_bonus);
+triptych-aa,zone/special_attacks.cpp,148-148,1,028ecbcb,return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
+triptych-aa,zone/special_attacks.cpp,150-150,1,028ecbcb,return base + static_cast<int>(ac_bonus + skill_bonus);
+triptych-aa,zone/special_attacks.cpp,2675-2675,1,028ecbcb,(skillInUse == EQ::skills::SkillArchery || skillInUse == EQ::skills::SkillThrowing) &&
+triptych-aa,zone/spell_effects.cpp,7471-7474,4,028ecbcb,"bool sum_aa_focus = RuleB(Custom, AAFocusEffectsStack);"
+triptych-aa,zone/spell_effects.cpp,7493-7496,4,028ecbcb,if (sum_aa_focus) {
+triptych-aa,zone/spell_effects.cpp,7503-7514,12,028ecbcb,if (sum_aa_focus && is_dmg_focus) {
+triptych-aa,zone/spell_effects.cpp,11230-11250,21,028ecbcb,// Beastlord Warder Form (Bestial Alignment): mirror the beastlord pet chart
+vault,common/database/database_update_manifest_custom.cpp,2314-2563,250,cbeab1f6,// ------------------------------------------------------------------
+vault,common/inventory_profile.cpp,264-268,5,cbeab1f6,int16 EQ::InventoryProfile::PushCursorFront(const ItemInstance &inst) {
+vault,common/inventory_profile.cpp,273-277,5,cbeab1f6,EQ::ItemInstance* EQ::InventoryProfile::PopCursorBack()
+vault,common/inventory_profile.h,132-134,3,cbeab1f6,// Add item to the front of the cursor queue (restores a cursor item a failed move took)
+vault,common/inventory_profile.h,138-140,3,cbeab1f6,// Remove (and return) the most recently pushed cursor item
+vault,common/item_instance.cpp,35-35,1,cbeab1f6,"#include ""nms_vault_item.h"""
+vault,common/item_instance.cpp,1059-1059,1,cbeab1f6,if (m_attuned || NmsVaultIsArmoryItem(m_item->ID)) {
+vault,zone/CMakeLists.txt,104-105,2,cbeab1f6,nms_vault.cpp
+vault,zone/CMakeLists.txt,155-156,2,cbeab1f6,nms_vault.h
+vault,zone/CMakeLists.txt,478-478,1,cbeab1f6,gm_commands/vault.cpp
+vault,zone/attack.cpp,43-44,2,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/attack.cpp,5356-5367,12,cbeab1f6,const EQ::ItemData *locker_item = nullptr;
+vault,zone/attack.cpp,5460-5519,60,cbeab1f6,// Nautilus Vault Proc Locker: independent rolls so the locker (its innate proc and
+vault,zone/bonuses.cpp,40-40,1,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/bonuses.cpp,199-200,2,cbeab1f6,"NmsVaultApplyLockerBonuses(CastToClient(), b);"
+vault,zone/client.cpp,95-95,1,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/client.cpp,737-740,4,cbeab1f6,// Despawn the vault merchant and drop this character's cached vault state. Logout and
+vault,zone/client.cpp,15221-15221,1,cbeab1f6,NmsVaultOnMerchantEnd(this);
+vault,zone/client.h,1049-1056,8,cbeab1f6,// Nautilus Vault: bank / merchant opened from the vault rather than a nearby NPC (nms_vault.cpp)
+vault,zone/client.h,1309-1309,1,cbeab1f6,"void RollbackFailedItemPut(int16 slot_id, bool client_update = true);"
+vault,zone/client.h,2359-2362,4,cbeab1f6,bool m_nms_vault_bank = false;
+vault,zone/client_packet.cpp,81-82,2,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/client_packet.cpp,835-837,3,cbeab1f6,NmsVaultOnZoneIn(this);
+vault,zone/client_packet.cpp,3923-3925,3,cbeab1f6,if (!NmsVaultBankAccess(this)) {
+vault,zone/client_packet.cpp,3927-3934,8,cbeab1f6,if (!banker || distance > USE_NPC_RANGE2)
+vault,zone/client_packet.cpp,4757-4761,5,cbeab1f6,"if (NmsVaultTryOpenFromItem(this, item->ID)) {"
+vault,zone/client_packet.cpp,9959-9965,7,cbeab1f6,"if (NmsVaultTryOpenFromItem(this, item->ID)) {"
+vault,zone/client_packet.cpp,13966-13966,1,cbeab1f6,"(!NmsVaultIsMerchant(this, tmp->GetID()) && DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2)"
+vault,zone/client_packet.cpp,14220-14220,1,cbeab1f6,"if (!NmsVaultIsMerchant(this, vendor->GetID()) && DistanceSquared(m_Position, vendor->GetPosition()) > USE_NPC"
+vault,zone/client_packet.cpp,14456-14456,1,cbeab1f6,"if (!NmsVaultIsMerchant(this, tmp->GetID()) && DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE"
+vault,zone/client_process.cpp,55-55,1,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/client_process.cpp,690-693,4,eaae4e5e,if (!dead) {
+vault,zone/client_process.cpp,1683-1683,1,cbeab1f6,if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+vault,zone/client_process.cpp,1717-1717,1,cbeab1f6,if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+vault,zone/client_process.cpp,1775-1775,1,cbeab1f6,if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+vault,zone/client_process.cpp,1837-1837,1,cbeab1f6,if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+vault,zone/command.cpp,251-258,8,cbeab1f6,"command_add(""vault_page"", ""Open a Nautilus Vault page"", AccountStatus::Player, command_vault_page) ||"
+vault,zone/command.h,202-209,8,cbeab1f6,"void command_vault_page(Client *c, const Seperator *sep);"
+vault,zone/inventory.cpp,31-31,1,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/inventory.cpp,1236-1276,41,cbeab1f6,"void Client::RollbackFailedItemPut(int16 slot_id, bool client_update)"
+vault,zone/inventory.cpp,2001-2001,1,cbeab1f6,if(!NmsVaultBankAccess(this) && (!banker || distance > USE_NPC_RANGE2))
+vault,zone/spell_effects.cpp,43-44,2,cbeab1f6,"#include ""nms_vault.h"""
+vault,zone/spell_effects.cpp,7291-7326,36,cbeab1f6,if (IsClient()) {
