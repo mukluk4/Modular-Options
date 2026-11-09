@@ -108,8 +108,8 @@ platform,utils/scripts/rift/client/add_dbstr.py
 platform,utils/scripts/rift/client/add_spells.py
 platform,utils/scripts/rift/luacheck.py
 platform,utils/scripts/rift/start_server.bat
-platinum-economy,utils/scripts/rift/gen_sinks.py
-platinum-economy,utils/scripts/rift/sql/2026_10_27_01_plat_aa_sinks.sql
+chronal-tribute,utils/scripts/rift/gen_sinks.py
+chronal-tribute,utils/scripts/rift/sql/2026_10_27_01_plat_aa_sinks.sql
 qol,utils/scripts/rift/sql/2026_11_08_03_hub_fast_regen.sql
 qol,utils/scripts/rift/sql/2026_11_08_04_mystats_for_players.sql
 raid-portal,docs/raids/RAID_PORTAL.md

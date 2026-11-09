@@ -34,8 +34,8 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `raid-portal` | **Raid portal.** Rift Raids: raid tiers, boss roster, raid instances (version 50), Prism Augmenter. | `greater-rifts` | EQEmu + NMS | 0 lines, 0 files | 60 |
 | `the-void` | **The Void hub.** The Void opened as a hub: gate, waypoint, vendors, soulbinder, arrival point. | — | EQEmu + NMS, NMS-only parts | 0 lines, 0 files | 7 |
 | `vault` | **Nautilus Vault.** Item vault, vault bags, proc locker, clicky buffs kept while vaulted. | — | EQEmu + NMS (runs on EQEmu today) | 506 lines, 15 files | 4 |
-| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying, and the Hailstone personal loot window. | `vault` | EQEmu + NMS (runs on EQEmu today) | 212 lines, 12 files | 2 |
-| `chronal-tribute` | **Chronal Tributes.** Tribute that scales with the rift band. | `greater-rifts` | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 2 |
+| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying, and the Hailstone personal loot window. | `vault` | EQEmu + NMS (runs on EQEmu today) | 236 lines, 12 files | 2 |
+| `chronal-tribute` | **Chronal Tributes.** Tribute that scales with the rift band. | `greater-rifts` | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 4 |
 | `paragon-aa` | **Paragon AAs.** Toggleable Paragon AAs. | — | EQEmu + NMS (runs on EQEmu today) | 30 lines, 5 files | 3 |
 | `triptych-aa` | **Triptych AA fixes.** Stacking spell damage AAs, Rogue and Ranger crits, buyable Glyphs, Throwing fixes. | — | EQEmu + NMS | 131 lines, 9 files | 0 |
 | `strike-aa` | **Strike AAs to 70.** Headshot, Assassinate, Decapitation (Frenzy) and Dire Charm II ranks to level 70. | — | EQEmu + NMS | 55 lines, 3 files | 2 |
@@ -43,7 +43,7 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `multiclass-bard` | **Multiclass Bard disciplines.** Bards use disciplines from all their classes. | — | NMS only | 20 lines, 1 files | 0 |
 | `qol` | **Quality of life.** Attack while casting, held group buffs and invisibility, rest regen, #zone and #mystats for players, auto train and scribe, Bazaar and Back. | — | EQEmu + NMS (runs on EQEmu today) | 137 lines, 12 files | 2 |
 | `instances` | **Instance times.** Lockouts (non-respawning 6h, respawning 5m, Plane of Time 6h) and the expedition NPC scaling switch. | — | EQEmu + NMS | 9 lines, 2 files | 0 |
-| `platinum-economy` | **Platinum economy.** Echo of Memory services paid in platinum, platinum AA sinks. | — | EQEmu + NMS, NMS-only parts | 372 lines, 9 files | 2 |
+| `platinum-economy` | **Platinum economy.** Echo of Memory removed: its services paid in platinum. | — | NMS | 348 lines, 8 files | 0 |
 | `content-fixes` | **Content fixes.** Zone and NPC changes: Xeru and Sanctus Seru, Echo spells, Gut Punch, Bazaar tradeskill stations. | — | EQEmu + NMS | 0 lines, 0 files | 7 |
 | `no-level-reqs` | **No item level requirements.** Every item usable at any level: required and recommended levels cleared. Database only. | — | EQEmu + NMS | 0 lines, 0 files | 0 |
 | `docs` | **Documentation.** Player's Guide, README, design specs. | — | NMS only | 47 lines, 1 files | 3 |
@@ -312,7 +312,7 @@ Bases: EQEmu + NMS (runs on EQEmu today)
 
 Needs: `vault`
 
-Core edits (lines added per file): `common/eq_packet_structs.h` 91, `zone/corpse.cpp` 45, `zone/loot.cpp` 20, `zone/attack.cpp` 18, `zone/client_packet.cpp` 13, `common/emu_oplist.h` 6, `utils/patches/patch_RoF2.conf` 6, `zone/corpse.h` 4, `zone/client.h` 3, `common/ruletypes.h` 2, `zone/client_packet.h` 2, `zone/npc.h` 2
+Core edits (lines added per file): `common/eq_packet_structs.h` 91, `zone/corpse.cpp` 45, `zone/loot.cpp` 44, `zone/attack.cpp` 18, `zone/client_packet.cpp` 13, `common/emu_oplist.h` 6, `utils/patches/patch_RoF2.conf` 6, `zone/corpse.h` 4, `zone/client.h` 3, `common/ruletypes.h` 2, `zone/client_packet.h` 2, `zone/npc.h` 2
 
 New files (2):
 
@@ -329,8 +329,10 @@ Needs: `greater-rifts`
 
 Core edits (lines added per file): `zone/tribute.cpp` 17, `zone/bonuses.cpp` 9
 
-New files (2):
+New files (4):
 
+- `utils/scripts/rift/gen_sinks.py` (also writes the Paragon AAs and the Chronal Artificer)
+- `utils/scripts/rift/sql/2026_10_27_01_plat_aa_sinks.sql`
 - `zone/nms_chronal_tribute.cpp`
 - `zone/nms_chronal_tribute.h`
 
@@ -408,16 +410,14 @@ Core edits (lines added per file): `Release-NMS-Plugins/NMS_instance_utils.pl` 7
 
 ### `platinum-economy`: Platinum economy
 
-Echo of Memory services paid in platinum, platinum AA sinks.
+Echo of Memory removed: its services paid in platinum.
 
-Bases: EQEmu + NMS, NMS-only parts. The platinum sinks run on EQEmu; the Echo of Memory services are NMS NPCs and currency.
+Bases: NMS. The Echo of Memory services are NMS NPCs and currency. The platinum and AA sinks once listed here went to
+their own modules: the Chronal Tributes to `chronal-tribute`, the Paragon AAs to `paragon-aa`, the Chronal Artificer to
+`dynamic-items`. Their generator, `gen_sinks.py`, is listed under `chronal-tribute`. The `zone/loot.cpp` lines listed
+here before were `RollIndependentLoot`, which belongs to `loot-offers`.
 
-Core edits (lines added per file): `Release-NMS-Quests/cshome/Apocrypha.pl` 180, `Release-NMS-Quests/bazaar/Tearel.pl` 60, `Release-NMS-Quests/ecommons/Son_of_Tearel.pl` 60, `zone/loot.cpp` 24, `Release-NMS-Quests/bazaar/151061.pl` 14, `Release-NMS-Quests/bazaar/Apocrypha.pl` 12, `Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl` 10, `Release-NMS-Plugins/SpendEOM.pl` 8, `Release-NMS-Quests/bazaar/Purveyor_of_Glamour.pl` 4
-
-New files (2):
-
-- `utils/scripts/rift/gen_sinks.py`
-- `utils/scripts/rift/sql/2026_10_27_01_plat_aa_sinks.sql`
+Core edits (lines added per file): `Release-NMS-Quests/cshome/Apocrypha.pl` 180, `Release-NMS-Quests/bazaar/Tearel.pl` 60, `Release-NMS-Quests/ecommons/Son_of_Tearel.pl` 60, `Release-NMS-Quests/bazaar/151061.pl` 14, `Release-NMS-Quests/bazaar/Apocrypha.pl` 12, `Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl` 10, `Release-NMS-Plugins/SpendEOM.pl` 8, `Release-NMS-Quests/bazaar/Purveyor_of_Glamour.pl` 4
 
 ### `content-fixes`: Content fixes
 

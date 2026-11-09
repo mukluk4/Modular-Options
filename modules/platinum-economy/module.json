@@ -1,0 +1,6 @@
+{
+	"name": "platinum-economy",
+	"title": "Platinum economy",
+	"description": "Removes the Echo of Memory currency: the NPC services that took Echoes take platinum instead (1 Echo = 1,000 platinum), Echoes stop dropping, the Echo merchant sells for platinum, character slot and set unlocks are free and every item can be sold.",
+	"bases": ["nms"]
+}

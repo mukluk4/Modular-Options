@@ -3,10 +3,11 @@
 
     python tools/modules.py list
     python tools/modules.py check
-    python tools/modules.py install --server <dir> [--quests <dir>] [--base eqemu|nms] <module> ... | --all
+    python tools/modules.py install --server <dir> [--quests <dir>] [--plugins <dir>] [--base eqemu|nms] <module> ...
+                                    | --all
     python tools/modules.py sql --server <dir> (--mysql "<command>" | --out <file>)
     python tools/modules.py test --repo <git repo> --ref <commit> --base eqemu|nms [--server-subdir <dir>]
-                                 [--quests-subdir <dir>] [<module> ...]
+                                 [--quests-subdir <dir>] [--plugins-subdir <dir>] [<module> ...]
 
 See docs/FRAMEWORK.md for the module format and what install changes.
 """
@@ -19,6 +20,9 @@ BASES = ('eqemu', 'nms')
 LOCK = 'modules.lock.json'
 HOOK = 'eqemu-modules hook'
 SOURCE_LISTS = {'zone': 'zone_sources', 'zone_headers': 'zone_headers', 'gm_commands': 'gm_command_sources'}
+# Where module files and patches go: the server source, the quests folder, and the Perl plugins folder (NMS keeps
+# them beside the quests, not inside)
+AREAS = ('server', 'quests', 'plugins')
 ACCESS = re.compile(r'^AccountStatus::\w+$')
 
 
@@ -125,7 +129,7 @@ def walk(top):
 
 
 def patch_files(m, base):
-    for area in ('server', 'quests'):
+    for area in AREAS:
         for p in sorted(walk(os.path.join(m['_dir'], base, 'patches', area))):
             yield p
 
@@ -288,7 +292,7 @@ def repo_version():
     return r.stdout.strip() if r.returncode == 0 else 'unknown'
 
 
-def install(server, quests, wanted, base=None, allow_dirty=False, log=print):
+def install(server, quests, wanted, base=None, allow_dirty=False, log=print, plugins=None):
     mods = load_modules()
     bad = problems(mods)
     if bad:
@@ -300,7 +304,8 @@ def install(server, quests, wanted, base=None, allow_dirty=False, log=print):
         log(f'note: {server} looks like {found}, installing for {base} as asked')
     if os.path.exists(os.path.join(server, LOCK)):
         raise Fail(f'modules are already installed in {server} ({LOCK}). Start from a clean tree to change the set.')
-    for path in (server, quests):
+    targets = {'server': server, 'quests': quests, 'plugins': plugins}
+    for path in targets.values():
         if path and dirty(path) and not allow_dirty:
             raise Fail(f'{path} has uncommitted changes. Commit or stash them first (or pass --allow-dirty).')
     names = order(mods, wanted)
@@ -313,16 +318,17 @@ def install(server, quests, wanted, base=None, allow_dirty=False, log=print):
             'installed': datetime.datetime.now().isoformat(timespec='seconds'), 'modules': []}
     for n in names:
         m = mods[n]
-        entry = {'name': n, 'server_files': copy_files(m, base, 'server', server), 'quest_files': [], 'patches': []}
-        if quests:
-            entry['quest_files'] = copy_files(m, base, 'quests', quests)
-        elif any(walk(os.path.join(m['_dir'], 'files', 'quests'))) or any(walk(os.path.join(m['_dir'], base, 'files', 'quests'))):
-            log(f'warning: {n} has quest files; pass --quests to install them')
+        entry = {'name': n, 'patches': []}
+        for area, target in targets.items():
+            if target:
+                entry[f'{area}_files'] = copy_files(m, base, area, target)
+            elif any(walk(os.path.join(m['_dir'], 'files', area))) or any(walk(os.path.join(m['_dir'], base, 'files', area))):
+                log(f'warning: {n} has {area} files; pass --{area} to install them')
         for p in patch_files(m, base):
             area = os.path.basename(os.path.dirname(p))
-            target = server if area == 'server' else quests
+            target = targets[area]
             if target is None:
-                log(f'warning: {n}: skipped quest patch {os.path.basename(p)}; pass --quests to apply it')
+                log(f'warning: {n}: skipped {area} patch {os.path.basename(p)}; pass --{area} to apply it')
                 continue
             err = apply_patch(target, p)
             if err:
@@ -395,7 +401,7 @@ def run_sql(mysql, text):
 # Test
 
 
-def test(repo, ref, base, server_subdir, quests_subdir, wanted, log=print):
+def test(repo, ref, base, server_subdir, quests_subdir, wanted, log=print, plugins_subdir=None):
     """Install each module alone, then all of them together, into a scratch worktree of the base."""
     mods = load_modules()
     wanted = wanted or [n for n, m in mods.items() if base in m['bases']]
@@ -406,13 +412,14 @@ def test(repo, ref, base, server_subdir, quests_subdir, wanted, log=print):
     try:
         server = os.path.join(wt, server_subdir)
         quests = os.path.join(wt, quests_subdir) if quests_subdir else None
+        plugins = os.path.join(wt, plugins_subdir) if plugins_subdir else None
         runs = [[n] for n in wanted] + ([wanted] if len(wanted) > 1 else [])
         for run in runs:
             git(wt, 'reset', '--hard', '--quiet')
             git(wt, 'clean', '-fdq')
             label = ', '.join(run) if len(run) == 1 else f'all {len(run)} together'
             try:
-                install(server, quests, run, base=base, log=lambda *_: None)
+                install(server, quests, run, base=base, log=lambda *_: None, plugins=plugins)
                 log(f'ok    {label}')
             except Fail as e:
                 failed.append(label)
@@ -434,6 +441,7 @@ def main():
     i = sub.add_parser('install', help='install modules into a server source tree')
     i.add_argument('--server', required=True, help='server source folder (has zone/ and common/)')
     i.add_argument('--quests', help='quests folder; quest files are skipped without it')
+    i.add_argument('--plugins', help='Perl plugins folder (NMS: Release-NMS-Plugins); plugin files are skipped without it')
     i.add_argument('--base', choices=BASES, help='override the detected base')
     i.add_argument('--all', action='store_true', help='every module that supports the base')
     i.add_argument('--allow-dirty', action='store_true', help='install into a tree with uncommitted changes')
@@ -449,6 +457,7 @@ def main():
     t.add_argument('--base', choices=BASES, required=True)
     t.add_argument('--server-subdir', default='.')
     t.add_argument('--quests-subdir')
+    t.add_argument('--plugins-subdir')
     t.add_argument('modules', nargs='*')
     a = p.parse_args()
     try:
@@ -468,12 +477,13 @@ def main():
                 wanted = [n for n, m in mods.items() if base in m['bases']]
             if not wanted:
                 raise Fail('name the modules to install, or pass --all')
-            names = install(a.server, a.quests, wanted, a.base, a.allow_dirty)
+            names = install(a.server, a.quests, wanted, a.base, a.allow_dirty, plugins=a.plugins)
             print(f'{len(names)} modules installed. Next: build the server, then run "sql" for the database.')
         elif a.cmd == 'sql':
             sql(os.path.abspath(a.server), a.mysql, a.out)
         elif a.cmd == 'test':
-            failed = test(os.path.abspath(a.repo), a.ref, a.base, a.server_subdir, a.quests_subdir, a.modules)
+            failed = test(os.path.abspath(a.repo), a.ref, a.base, a.server_subdir, a.quests_subdir, a.modules,
+                          plugins_subdir=a.plugins_subdir)
             return 1 if failed else 0
     except Fail as e:
         print(f'error: {e}', file=sys.stderr)

@@ -57,11 +57,11 @@ live Voidforged database on 2026-11-09, by table, with the module each belongs t
 |---|---:|---|---|
 | Price 0 to 1 copper (mob drops) | 9,340 | `content-fixes` | **live only** (backup `items_price_backup_20261107`) |
 | Classes 0 or 32767 to 65535 (all classes) | 9,645 | `content-fixes` | **live only** (backup `items_backup_20261028_classes`) |
-| Price 0 to a real price (every item can be sold) | 35,653 | `platinum-economy` | **live only** |
+| Price 0 to a real price (every item can be sold): 35,605 at 1,000 platinum, 48 Echo merchant goods | 35,653 | `platinum-economy` | SQL (rebuilt from live) |
 | Required level removed (`reqlevel` to 0) | 84,263, 66,077 of them above 65 | `no-level-reqs` | **live only** |
 | Recommended level removed (`reclevel` to 0) | 60,614 | `no-level-reqs` | **live only** |
 
 Both were done by hand on the live database, on purpose: Voidforged has no item level requirements, and every item
 has a price. `no-level-reqs` is its own module so other servers can leave it out. The exact SQL was not kept, so the
-module rebuilds it from the end state (every `reqlevel` and `reclevel` set to 0; prices to be worked out from the
-live values).
+module rebuilds it from the end state (every `reqlevel` and `reclevel` set to 0). The prices are rebuilt from the live
+values in `platinum-economy`.

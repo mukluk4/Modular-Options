@@ -14,6 +14,8 @@ python tools/modules.py install --server <server source> --quests <quests folder
 
 - `--server` is the folder that holds `zone/` and `common/`. For the NMS release that is `Release-NMS-Server`.
 - `--quests` is the quests folder (for NMS, `Release-NMS-Quests`). Without it, quest files are skipped with a warning.
+- `--plugins` is the Perl plugins folder, which NMS keeps beside the quests (`Release-NMS-Plugins`). Without it,
+  plugin files are skipped with a warning.
 - `--all` installs every module that supports the base.
 - The base (EQEmu or NMS) is detected from the tree; `--base` overrides it.
 - Requirements are added and ordered automatically: asking for `tier-gear` also installs what it needs.
@@ -67,8 +69,9 @@ modules/<name>/
   rules.h                  rules for the Custom category (optional)
   files/server/...         new files for the server source, on every base
   files/quests/...         new quest files, on every base
+  files/plugins/...        new Perl plugin files, on every base
   sql/*.sql                database changes, on every base
-  eqemu/                   stock EQEmu only: files/, patches/server/, patches/quests/, sql/
+  eqemu/                   stock EQEmu only: files/, patches/server/, patches/quests/, patches/plugins/, sql/
   nms/                     NMS only: the same folders
   README.md                what the module does, its rules and commands, and how to turn it off
 ```
@@ -98,7 +101,7 @@ modules/<name>/
 - `sources` paths are relative to `zone/`, as in `zone/CMakeLists.txt`. The files themselves go in
   `files/server/zone/...` (or under a base folder).
 - Patches are applied in file name order, so name them `0001-...patch`, `0002-...patch`. Their paths are relative to the
-  server source folder (`a/zone/client.h`), or to the quests folder for `patches/quests/`.
+  server source folder (`a/zone/client.h`), or to the quests folder for `patches/quests/` and the plugins folder for `patches/plugins/`.
 - Modules that don't require each other are patched against the bare base, so two of them adding lines at the same spot
   (say, an `#include` after the same line) collide when both are installed. Anchor such lines somewhere no other module
   uses; `test` installs every module together to catch this. A module that requires another is cut on top of that
@@ -113,7 +116,8 @@ modules/<name>/
 
 ```
 python tools/modules.py check
-python tools/modules.py test --repo <git repo> --ref <base commit> --base nms --server-subdir Release-NMS-Server --quests-subdir Release-NMS-Quests
+python tools/modules.py test --repo <git repo> --ref <base commit> --base nms --server-subdir Release-NMS-Server --quests-subdir Release-NMS-Quests \
+    --plugins-subdir Release-NMS-Plugins
 python tools/modules.py test --repo <EQEmu git repo> --ref <EQEmu commit> --base eqemu
 ```
 

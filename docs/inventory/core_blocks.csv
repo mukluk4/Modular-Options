@@ -326,7 +326,7 @@ platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,264-264,1,7c3179a
 platinum-economy,Release-NMS-Quests/bazaar/Vision_of_Ayonae.pl,279-279,1,7c3179a2,"if (plugin::SpendPlatinum($client, $remove_class_cost)) {"
 platinum-economy,Release-NMS-Quests/cshome/Apocrypha.pl,1-180,180,7c3179a2,# Basic Design
 platinum-economy,Release-NMS-Quests/ecommons/Son_of_Tearel.pl,1-60,60,7c3179a2,sub EVENT_SAY {
-platinum-economy,zone/loot.cpp,774-797,24,cbeab1f6,void NPC::RollIndependentLoot(LootItems &out)
+loot-offers,zone/loot.cpp,774-797,24,cbeab1f6,void NPC::RollIndependentLoot(LootItems &out)
 qol,Release-NMS-Quests/global/spells/5824.pl,14-14,1,763f5111,# Arrival spot in zone 151 (Bazaar)
 qol,Release-NMS-Quests/global/spells/5824.pl,16-16,1,763f5111,"'Arrival'       => [-85.32, -812.10, 3.13, 385.75],"
 qol,Release-NMS-Quests/global/spells/5824.pl,49-50,2,763f5111,# Bazaar arrivals face the spot's heading; East Commons stays random
