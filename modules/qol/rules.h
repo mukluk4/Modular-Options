@@ -1,0 +1,5 @@
+RULE_BOOL(Custom, AllowAttackWhileCasting, true, "Melee auto-attack and ranged/throwing attacks continue while casting a spell.")
+RULE_BOOL(Custom, KillFactionHits, true, "Killing an NPC adjusts the killers' faction from its npc_faction entries. False: kills never change faction (quest faction still works)")
+RULE_BOOL(Custom, AutoTrainSkills, true, "On level-up and login, raise skills (not tradeskills) to their caps for the character's level, across all of its classes. Specializations stop at Skills:MaxTrainSpecializations")
+RULE_BOOL(Custom, AutoScribeSpells, false, "On level-up and login, scribe every spell the character's classes have up to its level")
+RULE_BOOL(Custom, AutoLearnDisciplines, false, "On level-up and login, learn every discipline the character's classes have up to its level")

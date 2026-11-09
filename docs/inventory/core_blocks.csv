@@ -88,7 +88,8 @@ dynamic-items,common/patches/uf.cpp,4484-4485,2,44a10589,// Dynamic items send t
 dynamic-items,common/patches/uf.cpp,4567-4567,1,44a10589,ibs.id = inst->GetDisplayID() ? inst->GetDisplayID() : item->ID;
 dynamic-items,common/ruletypes.h,960-960,1,44a10589,"RULE_INT(Merchant, DynamicItemSellRefundPct, 20, ""Percent of the alternate currency cost refunded when selling"
 dynamic-items,common/ruletypes.h,1300-1311,12,cbeab1f6,// Dynamic item percent lines: caps on the character's total from all items and set bonuses
-dynamic-items,common/ruletypes.h,1314-1315,2,44a10589,"RULE_BOOL(Custom,   DynamicItemDisplayIds, 					true, ""Send each dynamic (seeded) item copy to clients under i"
+dynamic-items,common/ruletypes.h,1314-1314,1,44a10589,"RULE_BOOL(Custom,   DynamicItemDisplayIds, 					true, ""Send each dynamic (seeded) item copy to clients under i"
+qol,common/ruletypes.h,1315-1315,1,44a10589,"RULE_BOOL(Custom,   KillFactionHits, 						true, ""Killing an NPC adjusts the killers' faction from its npc_faction entries."
 dynamic-items,zone/CMakeLists.txt,128-129,2,44a10589,dynamic_items.cpp
 dynamic-items,zone/CMakeLists.txt,154-154,1,44a10589,dynamic_items.h
 dynamic-items,zone/CMakeLists.txt,362-362,1,44a10589,gm_commands/dynamic_items.cpp
@@ -144,7 +145,8 @@ dynamic-items,zone/main.cpp,397-401,5,44a10589,// Load dynamic (seeded) item def
 framework,common/version.h,47-47,1,446474fc,#define CUSTOM_BINARY_DATABASE_VERSION 37
 gear-sets,common/database/database_update_manifest_custom.cpp,2300-2313,14,6122838f,"// Armor set bonuses can grant a spell: a worn effect, a weapon proc or a spell-cast (sympathetic) proc"
 gear-sets,common/database/database_update_manifest_custom.cpp,2564-2583,20,446474fc,ManifestEntry{
-gear-sets,common/ruletypes.h,1316-1317,2,f64b854e,"RULE_STRING(Custom, ArmorSetTierVisuals, 					""13,15,17,12"", ""Spell effects shown on armor set tier changes: t"
+gear-sets,common/ruletypes.h,1316-1316,1,f64b854e,"RULE_STRING(Custom, ArmorSetTierVisuals, 					""13,15,17,12"", ""Spell effects shown on armor set tier changes: t"
+qol,common/ruletypes.h,1317-1317,1,f64b854e,"RULE_BOOL(Custom,   AutoTrainSkills, 						true, ""On level-up and login, raise skills (not tradeskills) to their caps"
 gear-sets,zone/CMakeLists.txt,363-363,1,446474fc,gm_commands/gear.cpp
 gear-sets,zone/bonuses.cpp,80-80,1,44a10589,CheckArmorSetBonuses(&itembonuses); // before ApplySkillBonuses: set bonuses can add dynamic affixes
 gear-sets,zone/client.cpp,15267-15286,20,44a10589,// Define Global Maps

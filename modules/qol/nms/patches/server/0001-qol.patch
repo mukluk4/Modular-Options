@@ -1,0 +1,308 @@
+diff --git a/common/ruletypes.h b/common/ruletypes.h
+index 2a2dd5b..bfa712e 100644
+--- a/common/ruletypes.h
++++ b/common/ruletypes.h
+@@ -1013,7 +1013,7 @@ RULE_REAL(AA, ModernAAScalingStartPercent, 300.0, "1000% or 10x AA experience at
+ RULE_INT(AA, ModernAAScalingAAMinimum, 0, "The minimum number of earned AA before AA experience scaling begins")
+ RULE_INT(AA, ModernAAScalingAALimit, 150, "The number of earned AA when AA experience scaling ends")
+ RULE_BOOL(AA, SoundForAAEarned, true, "Play sound when AA point earned")
+-RULE_INT(AA, UnusedAAPointCap, 100, "Cap for Unused AA Points.  Default: -1.  NOTE: DO NOT LOWER THIS WITHOUT KNOWING WHAT YOU ARE DOING. MAY RESULT IN PLAYERS LOSING AAs.")
++RULE_INT(AA, UnusedAAPointCap, -1, "Cap for Unused AA Points.  Default: -1.  NOTE: DO NOT LOWER THIS WITHOUT KNOWING WHAT YOU ARE DOING. MAY RESULT IN PLAYERS LOSING AAs.")
+ RULE_INT(AA, MaxAAEXPPerKill, 1200000, "Maximum AA EXP per Kill (3425214 is about 7%) - Default: -1 will disable the check")
+ RULE_CATEGORY_END()
+ 
+@@ -1285,6 +1285,7 @@ RULE_BOOL(Custom,   ConditionalPetRampageImmunity, 			true, "Enable to make pets
+ RULE_BOOL(Custom, 	DontInterruptHealsByMelee, 				true, "Enable to prevent direct heal spells from being interrupted by melee attacks")
+ RULE_BOOL(Custom,	AlternateMobFDBehavior,					true, "Enable to cause mob FD effects to randomly pick a new target")
+ RULE_BOOL(Custom,   EnableAccountAltCurrency, 				true, "Enable account-based alternate currency.")
++
+ RULE_INT(Custom,  	AAConsumeBaseValue, 					50, "Base value for AA consumption")
+ RULE_REAL(Custom, 	ScaleAutoAttackByHStr, 					1.0f, "Scale auto attack damage by this value. 0.0 to disable.")
+ RULE_INT(Custom, 	ScaleAutoAttackHStrSoftCap,	 			100, "Soft-cap: Lower bound of hStr linear decay soft scaling")
+diff --git a/zone/attack.cpp b/zone/attack.cpp
+index ad4718a..7bf568c 100644
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -2761,7 +2761,8 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
+ 	}
+ 
+ 	//do faction hits even if we are a merchant, so long as a player killed us
+-	if (!IsCharmed() && give_exp_client && !RuleB(NPC, EnableMeritBasedFaction)) {
++	const bool kill_faction_hits = RuleB(Custom, KillFactionHits);
++	if (kill_faction_hits && !IsCharmed() && give_exp_client && !RuleB(NPC, EnableMeritBasedFaction)) {
+ 		hate_list.DoFactionHits(GetNPCFactionID(), GetPrimaryFaction(), GetFactionAmount());
+ 	}
+ 
+@@ -2803,7 +2804,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
+ 				}
+ 
+ 				if (m.member) {
+-					if (RuleB(NPC, EnableMeritBasedFaction)) {
++					if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {
+ 						m.member->SetFactionLevel(
+ 							m.member->CharacterID(),
+ 							GetNPCFactionID(),
+@@ -2832,7 +2833,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
+ 				if (m && m->IsClient()) {
+ 					Client* c = m->CastToClient();
+ 
+-					if (RuleB(NPC, EnableMeritBasedFaction)) {
++					if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {
+ 						c->SetFactionLevel(
+ 							c->CharacterID(),
+ 							GetNPCFactionID(),
+@@ -2862,7 +2863,7 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
+ 				}
+ 			}
+ 
+-			if (RuleB(NPC, EnableMeritBasedFaction)) {
++			if (kill_faction_hits && RuleB(NPC, EnableMeritBasedFaction)) {
+ 				give_exp_client->SetFactionLevel(
+ 					give_exp_client->CharacterID(),
+ 					GetNPCFactionID(),
+diff --git a/zone/client.cpp b/zone/client.cpp
+index d5c7f71..1157dc5 100644
+--- a/zone/client.cpp
++++ b/zone/client.cpp
+@@ -13750,33 +13750,15 @@ std::string Client::GetGuildPublicNote()
+ 
+ void Client::MaxSkills()
+ {
+-    for (const auto &s : EQ::skills::GetSkillTypeMap()) {
+-        uint16 highestSkillCap = 0;
++	for (const auto &s : EQ::skills::GetSkillTypeMap()) {
++		const uint16 cap = EQ::skills::IsSpecializedSkill(s.first) ?
++			MAX_SPECIALIZED_SKILL :
++			GetHighestClassSkillCap(s.first, RuleI(Character, MaxLevel));
+ 
+-        if (RuleB(Custom, MulticlassingEnabled)) {
+-            unsigned int classes_bits = GetClassesBits();
+-
+-            // Loop through each bit in classes_bits
+-            for (int i = 0; i < sizeof(classes_bits) * 8; ++i) {
+-                // Check if the ith bit is set
+-                if (classes_bits & (1 << i)) {
+-                    // Compute the class ID from the bit position
+-                    uint16 classID = i + 1;
+-
+-                    uint16 classSkillCap = (
+-                        EQ::skills::IsSpecializedSkill(s.first) ?
+-						MAX_SPECIALIZED_SKILL :
+-						SkillCaps::Instance()->GetSkillCap(classID, s.first, RuleI(Character, MaxLevel)).cap
+-					);
+-				}
+-			}
+-		}
+-
+-		// Set skill to the highest cap found across all classes
+-		if (GetSkill(s.first) < highestSkillCap) {
+-			SetSkill(s.first, highestSkillCap);
++		if (GetRawSkill(s.first) < cap) {
++			SetSkill(s.first, cap);
+ 		}
+-    }
++	}
+ }
+ 
+ void Client::SendPath(Mob* target)
+diff --git a/zone/client.h b/zone/client.h
+index 95f27fd..765f612 100644
+--- a/zone/client.h
++++ b/zone/client.h
+@@ -1027,6 +1027,8 @@ public:
+ 	inline uint16 MaxSkill(EQ::skills::SkillType skill_id) const { return MaxSkill(skill_id, GetClass(), GetLevel()); }
+ 	uint8 GetSkillTrainLevel(EQ::skills::SkillType skill_id, uint8 class_id);
+ 	void MaxSkills();
++	uint16 GetHighestClassSkillCap(EQ::skills::SkillType skill, uint8 level);
++	void AutoLearnForLevel(); // Custom:AutoTrainSkills / AutoScribeSpells / AutoLearnDisciplines
+ 
+ 	void SendTradeskillSearchResults(const std::string &query, unsigned long objtype, unsigned long someid);
+ 	void SendTradeskillDetails(uint32 recipe_id);
+diff --git a/zone/client_packet.cpp b/zone/client_packet.cpp
+index 273f708..83789c0 100644
+--- a/zone/client_packet.cpp
++++ b/zone/client_packet.cpp
+@@ -1057,6 +1057,7 @@ void Client::CompleteConnect()
+ 
+ 	RecordStats();
+ 	AutoGrantAAPoints();
++	AutoLearnForLevel(); // catches up characters from before it was on, or a rule change
+ 	SendAlternateAdvancementTable();
+ 
+ 	if (RuleB(Custom, ServerAuthStats)) {
+diff --git a/zone/client_process.cpp b/zone/client_process.cpp
+index 3d91ef2..9f0dd1e 100644
+--- a/zone/client_process.cpp
++++ b/zone/client_process.cpp
+@@ -364,7 +364,7 @@ bool Client::Process() {
+ 		*/
+ 		if (AutoAttackEnabled() || AutoFireEnabled()) {
+ 			if (!IsAIControlled() && !dead
+-				&& !(spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id))
++				&& (RuleB(Custom, AllowAttackWhileCasting) || !(spellend_timer.Enabled() && casting_spell_id && !IsBardSong(casting_spell_id)))
+ 				&& !IsStunned() && !IsFeared() && !IsMezzed() && GetAppearance() != eaDead && !IsMeleeDisabled()
+ 				)
+ 				may_use_attacks = true;
+diff --git a/zone/command.cpp b/zone/command.cpp
+index 9f81898..d832c42 100644
+--- a/zone/command.cpp
++++ b/zone/command.cpp
+@@ -468,7 +468,17 @@ int command_realdispatch(Client *c, std::string message, bool ignore_status)
+ 
+ 	const auto arguments = sep.argnum;
+ 
+-	if (arguments) {
++	// A top-level alias of a sub command (#fz for #find zone) uses that sub command's access
++	for (const auto &e : command_subsettings) {
++		if (Strings::Contains(Strings::Split(e.top_level_aliases, "|"), command)) {
++			can_use_subcommand       = c->Admin() >= static_cast<int16>(e.access_level);
++			is_subcommand            = true;
++			found_subcommand_setting = true;
++			break;
++		}
++	}
++
++	if (arguments && !found_subcommand_setting) {
+ 		const std::string& sub_command = sep.arg[1];
+ 
+ 		for (const auto &e : command_subsettings) {
+diff --git a/zone/exp.cpp b/zone/exp.cpp
+index 5a2adaa..a23f3ae 100644
+--- a/zone/exp.cpp
++++ b/zone/exp.cpp
+@@ -1415,8 +1415,13 @@ void Client::SetLevel(uint8 set_level, bool command)
+ 		}
+ 	}
+ 
++	const bool leveled_up = set_level > m_pp.level;
+ 	m_pp.level = set_level;
+ 
++	if (leveled_up) {
++		AutoLearnForLevel();
++	}
++
+ 	if (command) {
+ 		m_pp.exp = GetEXPForLevel(set_level);
+ 		Message(Chat::Yellow, fmt::format("Welcome to level {}!", set_level).c_str());
+diff --git a/zone/gm_commands/zone.cpp b/zone/gm_commands/zone.cpp
+index 46caf37..725a3a7 100644
+--- a/zone/gm_commands/zone.cpp
++++ b/zone/gm_commands/zone.cpp
+@@ -1,5 +1,6 @@
+ #include "../bot.h"
+ #include "../client.h"
++#include "../../common/repositories/doors_repository.h"
+ 
+ void command_zone(Client *c, const Seperator *sep)
+ {
+@@ -54,6 +55,34 @@ void command_zone(Client *c, const Seperator *sep)
+ 		return;
+ 	}
+ 
++	// players need the key that the zone's locked entrance door asks for (Sleeper's Tomb, Vex Thal, the Mire)
++	if (c->Admin() < AccountStatus::Guide) {
++		const auto &key_doors = DoorsRepository::GetWhere(
++			content_db,
++			fmt::format(
++				"dest_zone = '{}' AND zone != dest_zone AND keyitem > 1 AND version = 0",
++				Strings::Escape(ZoneName(zone_id))
++			)
++		);
++
++		bool has_key = key_doors.empty();
++		for (const auto &d : key_doors) {
++			if (c->KeyRingCheck(d.keyitem) || c->GetInv().HasItem(d.keyitem, 1) != INVALID_INDEX) {
++				has_key = true;
++				break;
++			}
++		}
++
++		if (!has_key) {
++			const auto *key = database.GetItem(key_doors.front().keyitem);
++			c->Message(
++				Chat::White,
++				fmt::format("You need {} to enter that zone.", key ? key->Name : "the entrance key").c_str()
++			);
++			return;
++		}
++	}
++
+ 	// This block is necessary to clean up any bot objects owned by a Client
+ 	if (RuleB(Bots, Enabled) && zone_id != c->GetZoneID()) {
+ 		Bot::ProcessClientZoneChange(c);
+@@ -66,11 +95,16 @@ void command_zone(Client *c, const Seperator *sep)
+ 		return;
+ 	}
+ 
+-	// coordinates
+-	auto x         = sep->IsNumber(2) ? Strings::ToFloat(sep->arg[2]) : 0.0f;
+-	auto y         = sep->IsNumber(3) ? Strings::ToFloat(sep->arg[3]) : 0.0f;
+-	auto z         = sep->IsNumber(4) ? Strings::ToFloat(sep->arg[4]) : 0.0f;
+-	auto zone_mode = sep->IsNumber(2) ? ZoneSolicited : ZoneToSafeCoords;
++	// coordinates: players always land at the safe spot, so they can't skip past locked doors
++	const bool use_coords = sep->IsNumber(2) && c->Admin() >= AccountStatus::Guide;
++	if (sep->IsNumber(2) && !use_coords) {
++		c->Message(Chat::White, "Coordinates are GM-only; sending you to the zone's safe spot.");
++	}
++
++	auto x         = use_coords ? Strings::ToFloat(sep->arg[2]) : 0.0f;
++	auto y         = use_coords && sep->IsNumber(3) ? Strings::ToFloat(sep->arg[3]) : 0.0f;
++	auto z         = use_coords && sep->IsNumber(4) ? Strings::ToFloat(sep->arg[4]) : 0.0f;
++	auto zone_mode = use_coords ? ZoneSolicited : ZoneToSafeCoords;
+ 
+ 	c->MovePC(
+ 		zone_id,
+diff --git a/zone/special_attacks.cpp b/zone/special_attacks.cpp
+index 74e3d32..51ba3cc 100644
+--- a/zone/special_attacks.cpp
++++ b/zone/special_attacks.cpp
+@@ -1310,7 +1310,7 @@ bool Client::RangedAttack(Mob* other, bool CanDoubleAttack) {
+ 	}
+ 
+ 	if (!IsAttackAllowed(other) ||
+-		(IsCasting() && !IsBardSong(casting_spell_id)) ||
++		(!RuleB(Custom, AllowAttackWhileCasting) && IsCasting() && !IsBardSong(casting_spell_id)) ||
+ 		IsSitting() ||
+ 		(DivineAura() && !GetGM()) ||
+ 		IsStunned() ||
+@@ -1945,7 +1945,7 @@ void Client::ThrowingAttack(Mob* other, bool CanDoubleAttack) { //old was 51
+ 	}
+ 
+ 	if(!IsAttackAllowed(other) ||
+-		(IsCasting() && !IsBardSong(casting_spell_id)) ||
++		(!RuleB(Custom, AllowAttackWhileCasting) && IsCasting() && !IsBardSong(casting_spell_id)) ||
+ 		IsSitting() ||
+ 		(DivineAura() && !GetGM()) ||
+ 		IsStunned() ||
+diff --git a/zone/spell_effects.cpp b/zone/spell_effects.cpp
+index 488a54e..84c03eb 100644
+--- a/zone/spell_effects.cpp
++++ b/zone/spell_effects.cpp
+@@ -3994,7 +3994,7 @@ bool Mob::IsGroupSuspendableBuff(uint16 spell_id, Buffs_Struct buff) {
+ 	Client* client = GetOwnerOrSelf()->CastToClient();
+ 
+ 	if (caster && client) {
+-		if (caster == client || (client->GetGroup() && client->GetGroup()->IsGroupMember(client))) {
++		if (caster == client || (client->GetGroup() && client->GetGroup()->IsGroupMember(caster))) {
+ 			if (GetSpellEffectIndex(spell_id, SE_DivineAura) == -1) {
+ 				if (caster->GetInv().HasClickEffect(spell_id)) {
+ 					return true;
+@@ -4402,7 +4402,8 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
+ 		case SE_Invisibility:
+ 		case SE_InvisVsAnimals:
+ 		case SE_InvisVsUndead: {
+-			if (buff.ticsremaining > 3) {
++			// A held buff doesn't count down, so a fade started here would stick at 3 tics
++			if (buff.ticsremaining > 3 && !IsGroupSuspendableBuff(buff.spellid, buff)) {
+ 				if (!IsBardSong(buff.spellid)) {
+ 					double break_chance = 2.0;
+ 					if (caster) {
+@@ -4425,7 +4426,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
+ 		case SE_ImprovedInvisAnimals:
+ 		case SE_Invisibility2:
+ 		case SE_InvisVsUndead2: {
+-			if (!IsBardSong(buff.spellid)) {
++			if (!IsBardSong(buff.spellid) && !IsGroupSuspendableBuff(buff.spellid, buff)) {
+ 				if (buff.ticsremaining <= 3 && buff.ticsremaining > 1) {
+ 					MessageString(Chat::Spells, INVIS_BEGIN_BREAK);
+ 				}

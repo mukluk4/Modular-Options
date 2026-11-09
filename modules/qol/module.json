@@ -1,0 +1,9 @@
+{
+	"name": "qol",
+	"title": "Quality of life",
+	"description": "Attack while casting, automatic skill training (and optional spell scribing and discipline learning) on level-up, #zone, #mystats and #find zone for players with key checks, faster rest regen, an off switch for kill faction, and on NMS fixes for held group buffs and invisibility plus a better Bazaar and Back.",
+	"bases": ["eqemu", "nms"],
+	"sources": {
+		"zone": ["qol_auto_learn.cpp"]
+	}
+}

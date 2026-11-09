@@ -41,7 +41,7 @@ small NMS add-ons inside the module. Every module is tested on each base it supp
 | `strike-aa` | **Strike AAs to 70.** Headshot, Assassinate, Decapitation (Frenzy) and Dire Charm II ranks to level 70. | — | EQEmu + NMS | 55 lines, 3 files | 2 |
 | `pet-power` | **Pet power.** Pet focus jewelry bonuses and excess pet power scaling. | — | EQEmu + NMS | 13 lines, 2 files | 0 |
 | `multiclass-bard` | **Multiclass Bard disciplines.** Bards use disciplines from all their classes. | — | NMS only | 20 lines, 1 files | 0 |
-| `qol` | **Quality of life.** Attack while casting, held group buffs and invisibility, rest regen, #zone and #mystats for players, auto train and scribe, Bazaar and Back. | — | EQEmu + NMS (runs on EQEmu today) | 137 lines, 12 files | 2 |
+| `qol` | **Quality of life.** Attack while casting, held group buffs and invisibility, rest regen, #zone and #mystats for players, auto train and scribe, Bazaar and Back. | — | EQEmu + NMS (runs on EQEmu today) | 139 lines, 12 files | 2 |
 | `instances` | **Instance times.** Lockouts (non-respawning 6h, respawning 5m, Plane of Time 6h) and the expedition NPC scaling switch. | — | EQEmu + NMS | 9 lines, 2 files | 0 |
 | `platinum-economy` | **Platinum economy.** Echo of Memory removed: its services paid in platinum. | — | NMS | 348 lines, 8 files | 0 |
 | `content-fixes` | **Content fixes.** Zone and NPC changes: Xeru and Sanctus Seru, Echo spells, Gut Punch, Bazaar tradeskill stations. | — | EQEmu + NMS | 0 lines, 0 files | 7 |
@@ -393,7 +393,7 @@ Attack while casting, held group buffs and invisibility, rest regen, #zone and #
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Core edits (lines added per file): `zone/client.cpp` 56, `zone/gm_commands/zone.cpp` 39, `zone/command.cpp` 11, `common/ruletypes.h` 7, `zone/attack.cpp` 5, `zone/exp.cpp` 5, `Release-NMS-Quests/global/spells/5824.pl` 4, `zone/spell_effects.cpp` 4, `zone/client.h` 2, `zone/special_attacks.cpp` 2, `zone/client_packet.cpp` 1, `zone/client_process.cpp` 1
+Core edits (lines added per file): `zone/client.cpp` 56, `zone/gm_commands/zone.cpp` 39, `zone/command.cpp` 11, `common/ruletypes.h` 9, `zone/attack.cpp` 5, `zone/exp.cpp` 5, `Release-NMS-Quests/global/spells/5824.pl` 4, `zone/spell_effects.cpp` 4, `zone/client.h` 2, `zone/special_attacks.cpp` 2, `zone/client_packet.cpp` 1, `zone/client_process.cpp` 1
 
 New files (2):
 
