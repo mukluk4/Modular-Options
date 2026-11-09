@@ -1,0 +1,17 @@
+{
+	"name": "example",
+	"title": "Example module",
+	"description": "Test module for tools/modules.py: one GM command in a new source file, one rule, one quest file and one SQL file.",
+	"bases": ["eqemu", "nms"],
+	"sources": {
+		"gm_commands": ["gm_commands/eqmod_example.cpp"]
+	},
+	"commands": [
+		{
+			"name": "eqmodexample",
+			"access": "AccountStatus::Player",
+			"function": "command_eqmodexample",
+			"description": "Says whether the example module's rule is on"
+		}
+	]
+}

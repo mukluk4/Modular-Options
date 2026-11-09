@@ -1,0 +1,6 @@
+{
+	"name": "merchant-buckets",
+	"title": "Merchant bucket gates",
+	"description": "A merchantlist row with bucket_name and bucket_value only shows and sells once the character's own data bucket passes bucket_comparison. Covers regular merchants and alternate currency merchants (listing and buying). Rift tier gear and ranger arrows use this to unlock by deepest rift cleared.",
+	"bases": ["eqemu", "nms"]
+}

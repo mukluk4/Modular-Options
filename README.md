@@ -15,14 +15,22 @@ The modules come from Voidforged, an NMS-based server, and its single-class sibl
 
 ## Status
 
-Work in progress. Nothing here is installable yet.
+Work in progress. One module so far, `merchant-buckets`; the rest are being moved in.
 
 1. **Inventory** (done): every Voidforged addition mapped to a module. See `docs/inventory/INVENTORY.md`.
-2. **Database-only changes**: content that was changed in the live database but not in SQL files gets a module and an
-   SQL file.
-3. **Framework**: a build option per module, module folders, and an install script that checks dependencies and
-   gathers each selected module's SQL, quests and Lua.
-4. **Modules**: moved in one at a time, each checked on both bases.
+2. **Database changes** (done): every content change compared with the NMS release database, by module. See
+   `docs/inventory/DATABASE.md`.
+3. **Framework** (done): module folders and `tools/modules.py`, which checks requirements, installs modules into a
+   server source tree and applies their SQL. See `docs/FRAMEWORK.md`.
+4. **Modules**: moved in one at a time, each installed and built on the bases it supports.
+
+## Quick start
+
+```
+python tools/modules.py list
+python tools/modules.py install --server <server source> --quests <quests folder> <module> ...
+python tools/modules.py sql --server <server source> --mysql "mysql peq"
+```
 
 ## License
 

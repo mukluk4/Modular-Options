@@ -14,7 +14,7 @@ about 36,400 lines added. Nothing has been moved yet.
 
 Modules target plain EQEmu (what akk-stack builds) first, with NMS as a second supported base (decided
 2026-11-09). Each module lists the bases it supports; NMS-only pieces (multiclass hooks, Echo of Memory) become
-small NMS add-ons inside the module. Phase 2 checks every module on both bases.
+small NMS add-ons inside the module. Every module is tested on each base it supports.
 
 "Runs on EQEmu today" means the module is already ported to the single-class server, which runs on stock EQEmu.
 
@@ -22,18 +22,19 @@ small NMS add-ons inside the module. Phase 2 checks every module on both bases.
 
 | Module | What it is | Needs | Bases | Core edits | New files |
 |---|---|---|---|---:|---:|
-| `framework` | **Module framework.** Build options, the shared database version, and merchant rows gated by data buckets (used by tier gear and other unlocks). | — | EQEmu + NMS (runs on EQEmu today) | 33 lines, 4 files | 0 |
+| `framework` | **Module framework.** tools/modules.py and the install hooks: module folders, dependency checks, generated rule, command and build lists, SQL tracked per module. Replaces the shared custom database version. | — | EQEmu + NMS | 1 lines, 1 files | 0 |
+| `merchant-buckets` | **Merchant bucket gates.** Merchant rows gated by data buckets on regular and alternate currency merchants (used by tier gear and other unlocks). | — | EQEmu + NMS (runs on EQEmu today) | 32 lines, 3 files | 0 |
 | `core-fixes` | **NMS bug fixes.** Fixes any NMS server wants: suppressed-buff dispel crash, target-of-target procs, zone-state loot tables, zone objects with no map floor, server buffs on zone boot, login lockout. | — | EQEmu + NMS | 21 lines, 5 files | 0 |
 | `platform` | **Platform.** Docker packaging, nightly backups, VoidPatcher, content snapshot tools, Linux build fixes, client spell ID limit. | — | EQEmu + NMS, NMS-only parts | 20 lines, 3 files | 27 |
-| `dynamic-items` | **Dynamic items.** Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge. | `framework` | EQEmu + NMS (runs on EQEmu today) | 1774 lines, 21 files | 21 |
+| `dynamic-items` | **Dynamic items.** Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge. | — | EQEmu + NMS (runs on EQEmu today) | 1774 lines, 21 files | 21 |
 | `gear-sets` | **Armor and gear sets.** Armor set bonuses (stat and spell-granting), class set textures and icons, #gear saved gear sets. | `dynamic-items` | EQEmu + NMS (runs on EQEmu today) | 433 lines, 11 files | 8 |
 | `glamour` | **Glamour vendors.** Glamour ornament vendors with tint sets; merchants refuse glamour resale. | — | EQEmu + NMS | 8 lines, 2 files | 7 |
-| `greater-rifts` | **Greater Rifts.** Rift scripts, Guardians, pylons, champion affixes, rift zones, deepest-clear bucket, completion rewards, crash recovery. | `framework` | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 26 |
-| `tier-gear` | **Tiered rift gear.** Five tiers of armor, jewelry, Facet augments, weapons and ranger arrows on rift vendors. | `dynamic-items`, `gear-sets`, `greater-rifts` | EQEmu + NMS (runs on EQEmu today) | 0 lines, 0 files | 8 |
+| `greater-rifts` | **Greater Rifts.** Rift scripts, Guardians, pylons, champion affixes, rift zones, deepest-clear bucket, completion rewards, crash recovery. | — | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 26 |
+| `tier-gear` | **Tiered rift gear.** Five tiers of armor, jewelry, Facet augments, weapons and ranger arrows on rift vendors. | `dynamic-items`, `gear-sets`, `greater-rifts`, `merchant-buckets` | EQEmu + NMS (runs on EQEmu today) | 0 lines, 0 files | 8 |
 | `raid-portal` | **Raid portal.** Rift Raids: raid tiers, boss roster, raid instances (version 50), Prism Augmenter. | `greater-rifts` | EQEmu + NMS | 0 lines, 0 files | 60 |
 | `the-void` | **The Void hub.** The Void opened as a hub: gate, waypoint, vendors, soulbinder, arrival point. | — | EQEmu + NMS, NMS-only parts | 0 lines, 0 files | 7 |
-| `vault` | **Nautilus Vault.** Item vault, vault bags, proc locker, clicky buffs kept while vaulted. | `framework` | EQEmu + NMS (runs on EQEmu today) | 506 lines, 15 files | 4 |
-| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying. | `framework` | EQEmu + NMS (runs on EQEmu today) | 144 lines, 11 files | 2 |
+| `vault` | **Nautilus Vault.** Item vault, vault bags, proc locker, clicky buffs kept while vaulted. | — | EQEmu + NMS (runs on EQEmu today) | 506 lines, 15 files | 4 |
+| `loot-offers` | **Personal loot offers.** /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying. | — | EQEmu + NMS (runs on EQEmu today) | 144 lines, 11 files | 2 |
 | `chronal-tribute` | **Chronal Tributes.** Tribute that scales with the rift band. | `greater-rifts` | EQEmu + NMS (runs on EQEmu today) | 26 lines, 2 files | 2 |
 | `paragon-aa` | **Paragon AAs.** Toggleable Paragon AAs. | — | EQEmu + NMS (runs on EQEmu today) | 30 lines, 5 files | 3 |
 | `triptych-aa` | **Triptych AA fixes.** Stacking spell damage AAs, Rogue and Ranger crits, buyable Glyphs, Throwing fixes. | — | EQEmu + NMS | 131 lines, 9 files | 0 |
@@ -52,11 +53,19 @@ small NMS add-ons inside the module. Phase 2 checks every module on both bases.
 
 ### `framework`: Module framework
 
-Build options, the shared database version, and merchant rows gated by data buckets (used by tier gear and other unlocks).
+tools/modules.py and the install hooks: module folders, dependency checks, generated rule, command and build lists, SQL tracked per module. Replaces the shared custom database version.
+
+Bases: EQEmu + NMS
+
+Core edits (lines added per file): `common/version.h` 1
+
+### `merchant-buckets`: Merchant bucket gates
+
+Merchant rows gated by data buckets on regular and alternate currency merchants (used by tier gear and other unlocks).
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Core edits (lines added per file): `zone/client_process.cpp` 22, `zone/client_packet.cpp` 9, `common/version.h` 1, `zone/client.h` 1
+Core edits (lines added per file): `zone/client_process.cpp` 22, `zone/client_packet.cpp` 9, `zone/client.h` 1
 
 ### `core-fixes`: NMS bug fixes
 
@@ -109,8 +118,6 @@ New files (27):
 Seeded random-stat items, class pools, item percent lines and caps, #dyninfo, #reforge.
 
 Bases: EQEmu + NMS (runs on EQEmu today)
-
-Needs: `framework`
 
 Core edits (lines added per file): `common/database/database_update_manifest_custom.cpp` 1523, `zone/client_packet.cpp` 93, `common/item_instance.cpp` 29, `common/item_instance.h` 17, `zone/bonuses.cpp` 17, `zone/client.h` 16, `zone/effects.cpp` 16, `common/ruletypes.h` 15, `zone/client_mods.cpp` 9, `zone/main.cpp` 6, `zone/CMakeLists.txt` 5, `common/patches/rof.cpp` 3, `common/patches/rof2.cpp` 3, `common/patches/sod.cpp` 3, `common/patches/sof.cpp` 3, `common/patches/titanium.cpp` 3, `common/patches/uf.cpp` 3, `zone/client.cpp` 3, `zone/command.cpp` 3, `zone/command.h` 3, `common/CMakeLists.txt` 1
 
@@ -183,8 +190,6 @@ Rift scripts, Guardians, pylons, champion affixes, rift zones, deepest-clear buc
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Needs: `framework`
-
 Core edits (lines added per file): `Release-NMS-Quests/sleeper/encounters/sleeper_custom.lua` 25, `README.md` 1
 
 New files (26):
@@ -222,7 +227,7 @@ Five tiers of armor, jewelry, Facet augments, weapons and ranger arrows on rift 
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Needs: `dynamic-items`, `gear-sets`, `greater-rifts`
+Needs: `dynamic-items`, `gear-sets`, `greater-rifts`, `merchant-buckets`
 
 New files (8):
 
@@ -288,8 +293,6 @@ Item vault, vault bags, proc locker, clicky buffs kept while vaulted.
 
 Bases: EQEmu + NMS (runs on EQEmu today)
 
-Needs: `framework`
-
 Core edits (lines added per file): `common/database/database_update_manifest_custom.cpp` 250, `zone/attack.cpp` 74, `zone/inventory.cpp` 43, `zone/spell_effects.cpp` 38, `zone/client_packet.cpp` 31, `zone/client.h` 13, `common/inventory_profile.cpp` 10, `zone/client_process.cpp` 9, `zone/command.cpp` 8, `zone/command.h` 8, `common/inventory_profile.h` 6, `zone/client.cpp` 6, `zone/CMakeLists.txt` 5, `zone/bonuses.cpp` 3, `common/item_instance.cpp` 2
 
 New files (4):
@@ -304,8 +307,6 @@ New files (4):
 /nmsloot keep and sell rules, solo and group personal loot, group corpse emptying.
 
 Bases: EQEmu + NMS (runs on EQEmu today)
-
-Needs: `framework`
 
 Core edits (lines added per file): `zone/corpse.cpp` 45, `common/eq_packet_structs.h` 41, `zone/loot.cpp` 20, `zone/attack.cpp` 18, `zone/client_packet.cpp` 7, `zone/corpse.h` 4, `common/emu_oplist.h` 2, `common/ruletypes.h` 2, `utils/patches/patch_RoF2.conf` 2, `zone/npc.h` 2, `zone/client_packet.h` 1
 
@@ -466,24 +467,16 @@ New files (3):
 - `docs/players/Voidforged_Players_Guide.pdf`
 - `docs/players/make_players_guide.py`
 
-## Not in git
+## Database
 
-Some changes were made straight to the live database and exist only there and in the content snapshot
-(`database/voidforged-content.zip`): for example the 1 cp sell price on 0-price drops, removing Echo of Sebilis, and
-the Chronal Prism db_str rows. Phase 1b compares the snapshot against stock PEQ so each of these gets a module and an
-SQL file.
+Changes made straight to the live database, and every other content difference from the NMS release database
+(`database/release-peq.zip`), are listed by table and module in `DATABASE.md`.
 
-## Database baseline
-
-The NMS release has no full database dump. It runs on a stock PEQ database plus its own migrations in
-`common/database/database_update_manifest_custom.cpp`. Our migrations went into that same file (about 1,800 lines,
-mostly dynamic items and the vault), so each module will carry its own migrations instead. The clean test baseline
-is a stock PEQ dump from the release's date plus the NMS migrations.
+Our migrations went into NMS's `common/database/database_update_manifest_custom.cpp` (about 1,800 lines, mostly
+dynamic items and the vault). As modules they become SQL files in each module, tracked per module (see
+`docs/FRAMEWORK.md`), so modules never fight over one shared version number.
 
 ## Next
 
-1. Review this split: rename, merge or move anything.
-2. Phase 1b: the database-only changes above.
-3. Phase 2: the module framework (build options, module folders, the install script) and the checks:
-   on NMS, everything on builds today's Voidforged and everything off builds the NMS release; on plain EQEmu,
-   everything off builds stock EQEmu and each EQEmu-supported module builds and loads on its own.
+1. Phase 2 (done): `tools/modules.py`, the install hooks and the module format. See `docs/FRAMEWORK.md`.
+2. Phase 3: move the modules in one at a time, each installed alone and together on both bases.

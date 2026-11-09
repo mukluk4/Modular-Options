@@ -142,11 +142,6 @@ dynamic-items,zone/effects.cpp,665-669,5,44a10589,"// Dynamic item healing %, ap
 dynamic-items,zone/main.cpp,92-92,1,44a10589,"#include ""dynamic_items.h"""
 dynamic-items,zone/main.cpp,397-401,5,44a10589,// Load dynamic (seeded) item definitions
 framework,common/version.h,47-47,1,446474fc,#define CUSTOM_BINARY_DATABASE_VERSION 37
-framework,zone/client.h,648-648,1,1b885295,bool PassesMerchantBucket(const MerchantList& ml);
-framework,zone/client_packet.cpp,2783-2787,5,1b885295,"// Bucket gates (e.g. rift tier gear unlocks) apply here too, not just on regular merchants"
-framework,zone/client_packet.cpp,2853-2856,4,1b885295,if (!PassesMerchantBucket(ml)) {
-framework,zone/client_process.cpp,1114-1132,19,1b885295,// A merchantlist row with bucket_name/bucket_value only shows (and sells) once the character's own
-framework,zone/client_process.cpp,1159-1161,3,1b885295,if (!PassesMerchantBucket(ml)) {
 gear-sets,common/database/database_update_manifest_custom.cpp,2300-2313,14,6122838f,"// Armor set bonuses can grant a spell: a worn effect, a weapon proc or a spell-cast (sympathetic) proc"
 gear-sets,common/database/database_update_manifest_custom.cpp,2564-2583,20,446474fc,ManifestEntry{
 gear-sets,common/ruletypes.h,1316-1317,2,f64b854e,"RULE_STRING(Custom, ArmorSetTierVisuals, 					""13,15,17,12"", ""Spell effects shown on armor set tier changes: t"
@@ -264,6 +259,11 @@ loot-offers,zone/corpse.h,299-299,1,cbeab1f6,uint64                   m_nms_loot
 loot-offers,zone/loot.cpp,342-361,20,cbeab1f6,// RollIndependentLoot: collect the roll for /nmsloot instead of adding it to this NPC
 loot-offers,zone/npc.h,227-227,1,cbeab1f6,void RollIndependentLoot(LootItems &out); // /nmsloot: roll this NPC's tables into out without touching its ow
 loot-offers,zone/npc.h,731-731,1,cbeab1f6,LootItems *m_loot_item_sink = nullptr; // set only during RollIndependentLoot
+merchant-buckets,zone/client.h,648-648,1,1b885295,bool PassesMerchantBucket(const MerchantList& ml);
+merchant-buckets,zone/client_packet.cpp,2783-2787,5,1b885295,"// Bucket gates (e.g. rift tier gear unlocks) apply here too, not just on regular merchants"
+merchant-buckets,zone/client_packet.cpp,2853-2856,4,1b885295,if (!PassesMerchantBucket(ml)) {
+merchant-buckets,zone/client_process.cpp,1114-1132,19,1b885295,// A merchantlist row with bucket_name/bucket_value only shows (and sells) once the character's own
+merchant-buckets,zone/client_process.cpp,1159-1161,3,1b885295,if (!PassesMerchantBucket(ml)) {
 multiclass-bard,zone/client.cpp,12280-12298,19,f6852ed9,"// Multiclass characters all store Bard as their base class, so check every class they have"
 multiclass-bard,zone/client.cpp,12301-12301,1,f6852ed9,if (!any_class_usable) {
 paragon-aa,common/ruletypes.h,1352-1363,12,446474fc,"// Platinum and AA sinks: Chronal Tributes, Paragon AAs, reforging dynamic items (zone/nms_chronal_tribute.cpp"
