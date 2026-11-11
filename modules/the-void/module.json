@@ -1,0 +1,6 @@
+{
+	"name": "the-void",
+	"title": "The Void hub",
+	"description": "The Void (thevoida) opened to players as a hub, with a soulbinder. On NMS it's on the Bazaar map and gated behind Plane of Time access.",
+	"bases": ["eqemu", "nms"]
+}

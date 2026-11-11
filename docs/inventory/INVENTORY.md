@@ -478,3 +478,11 @@ dynamic items and the vault). As modules they become SQL files in each module, t
 - `core-fixes` also has two fixes made after the inventory was measured, cut from Voidforged commits `9f54e9a4`
   (fallback heal message, `zone/attack.cpp`) and `4578da87` (feign death while moving, `zone/client_packet.cpp`).
 - The server buff call on zone boot (`zone/zone.cpp` 1265-1267) belongs to `core-fixes`, not `gear-sets`.
+- Moved between modules while building `the-void` and `greater-rifts`: Zebuxoruk's script (`thevoida/459000.lua`, he
+  opens the rifts) went to `greater-rifts`; `txevu/encounters/acm_portal.lua` is a raid portal fight, so it waits for
+  `raid-portal`; the Sleeper's Tomb warder flag fix and the `Custom:PermanentServerBuffsEnabled` casing fix went to
+  `core-fixes`. `greater-rifts` requires `the-void`.
+- The rift NPCs, spawn groups, Chronal Shard and its currency were made by hand on Voidforged before any of it was in
+  git; `greater-rifts` rebuilds them from the live rows (NMS) and takes the Singlevoid port's rows (stock EQEmu). The
+  old respawn, door unlock and deepest-clear migration files aren't needed: the zone SQL already sets the respawn and
+  unlocks doors, and the migration only moved an old key.

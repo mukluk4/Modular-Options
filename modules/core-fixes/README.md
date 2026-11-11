@@ -11,10 +11,13 @@ Fixes for bugs in the server code. None of them change how the game is meant to 
 | Zone-state loot | NMS | With `Custom:DoItemUpgrades`, loot restored from a saved zone state lost its loot table link, so personal loot rules treated it as quest-added. |
 | Server buffs on zone boot | NMS | A zone booting with stale rules could wipe the NMS permanent server buffs for everyone. On boot they are now only ever added; removing them is left to a rules reload. |
 | Feign death while moving | NMS | A multiclass player whose client class can't feign isn't stood up by their client when they move, so the server kept them feigned while they ran around. Moving now breaks feign death, as it breaks hide. |
+| Server buff rule | NMS | `Custom:PermanentServerBuffsEnabled` was stored as `True`; rule booleans are case-sensitive, so zones read it as off. The SQL stores `true`. |
+| Sleeper's Tomb warder flag | NMS | Instance IDs are reused, so a new instance could inherit an old one's warder flag and Kerafyrm's adds dropped no loot. The flag now stores the instance's end time and only counts when it matches. |
 
-## Rules, commands and database
+## Rules and commands
 
-None.
+None. The server buff rule fix is `nms/sql`; the warder fix patches `sleeper/encounters/sleeper_custom.lua` in the quests
+folder (`--quests`).
 
 ## Credits
 

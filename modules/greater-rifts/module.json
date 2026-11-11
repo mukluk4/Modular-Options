@@ -1,0 +1,7 @@
+{
+	"name": "greater-rifts",
+	"title": "Greater Rifts",
+	"description": "Timed, randomized solo or group instances in classic dungeons, tiers 1 to 500, opened by Zebuxoruk in The Void: scaled trash with champion affixes, pylons, a Rift Guardian, and Chronal Shards and platinum for a clear.",
+	"bases": ["eqemu", "nms"],
+	"requires": ["the-void"]
+}
