@@ -486,3 +486,11 @@ dynamic items and the vault). As modules they become SQL files in each module, t
   git; `greater-rifts` rebuilds them from the live rows (NMS) and takes the Singlevoid port's rows (stock EQEmu). The
   old respawn, door unlock and deepest-clear migration files aren't needed: the zone SQL already sets the respawn and
   unlocks doors, and the migration only moved an old key.
+- `chronal-tribute` ships the tribute part of the sinks SQL for each base (60-63 on NMS, 90-93 on stock EQEmu with
+  the ID rules moved to match), not `gen_sinks.py`, which also writes the Paragon and Artificer rows. Its
+  `zone/bonuses.cpp` hunks use one line of context (and `vault`'s tribute-loop hunk was cut down to match), so the
+  two modules can change neighbouring lines. `greater-rifts` now takes the Chronal Fortune ID from
+  `Custom:ChronalTributeFirstID` + 3 instead of a fixed 63.
+- `raid-portal` is NMS only for now (no stock port exists yet). The tier weapons and Prism Augmenter SQL
+  (`2026_11_03_03_tier_weapons_raid_augments.sql`) needs dynamic items, so it goes to `tier-gear`. The design notes
+  (`docs/raids/RAID_PORTAL.md`) stay in Voidforged; the module README covers what an owner needs.

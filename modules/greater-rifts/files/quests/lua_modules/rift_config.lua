@@ -47,7 +47,7 @@ return {
         platinum_per_tier = 1000,  -- also paid on a clear: tier x this, to each player (no speed bonus)
         -- Chronal Fortune tribute: +pct_per_tier% shards per tribute tier (never platinum). The zone writes
         -- the character's active Chronal Tributes to the "chronal_tributes" bucket (zone/nms_chronal_tribute.cpp).
-        fortune_tribute_id = 63,
+        -- fortune_tribute_id = 63,  -- default: Custom:ChronalTributeFirstID + 3
         fortune_pct_per_tier = 5,
     },
 

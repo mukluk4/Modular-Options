@@ -1,0 +1,7 @@
+{
+	"name": "raid-portal",
+	"title": "Raid Portal",
+	"description": "A Raid Portal in The Void sends a raid into a private instance to fight one boss, rescaled for raid tier (1-5, unlocked by the leader's deepest Greater Rift clear) and raid size (6-72). Kills pay Chronal Prisms, a raid-only currency. GM-only while in testing.",
+	"bases": ["nms"],
+	"requires": ["greater-rifts"]
+}

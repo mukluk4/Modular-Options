@@ -1,0 +1,11 @@
+{
+	"name": "chronal-tribute",
+	"title": "Chronal Tributes",
+	"description": "Four tributes that only work inside a Greater Rift: Chronal Might, Arcana, Bulwark and Fortune. Each tribute tier covers one band of rift tiers, and instead of a cost every 10 minutes they take favor once per rift run, scaled by the rift's tier. Chronal Fortune adds Chronal Shards to a clear.",
+	"bases": ["eqemu", "nms"],
+	"requires": ["greater-rifts"],
+	"sources": {
+		"zone": ["nms_chronal_tribute.cpp"],
+		"zone_headers": ["nms_chronal_tribute.h"]
+	}
+}

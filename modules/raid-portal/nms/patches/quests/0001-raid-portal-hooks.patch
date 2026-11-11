@@ -1,0 +1,40 @@
+diff --git a/global/global_npc.pl b/global/global_npc.pl
+--- a/global/global_npc.pl
++++ b/global/global_npc.pl
+@@ -90,6 +90,7 @@ sub EVENT_SAY {
+ 
+ sub EVENT_DEATH_COMPLETE {
+     plugin::CustomEventNPCDeathEntry($killer_id);
++    plugin::RaidPortalDeath($npc, $x, $y, $z);
+ 
+     if (defined($killed_corpse_id)) {
+         my $corpse = $entity_list->GetCorpseByID($killed_corpse_id);
+@@ -161,6 +162,8 @@ sub EVENT_SPAWN {
+         return;
+     }
+ 
++    plugin::RaidPortalSpawn($npc);
++
+     
+     if ($instanceversion > 0) {        
+         if ($npc->GetName() =~ /Echo_of_the_Past/) {
+diff --git a/global/global_player.pl b/global/global_player.pl
+--- a/global/global_player.pl
++++ b/global/global_player.pl
+@@ -30,6 +30,7 @@ sub EVENT_ENTERZONE {
+     $client->ChangeSize($default_size);
+ 
+ 	plugin::CommonCharacterUpdate($client);
++	plugin::RaidPortalClaim($client);
+ 
+ 	# Greater Rifts can be in zones from later expansions; the rift itself is the gate
+ 	if (!InGreaterRift() && !plugin::is_eligible_for_zone($client, $zonesn)) {
+@@ -799,7 +800,7 @@ sub UpdateDayNightCycle {
+ # NMS: Plane of Time access (account-wide Maelin flag) unlocks The Void
+ # A Greater Rift instance (the rift sets gr_tier_<instance id> when it opens; see rift_core.lua is_rift)
+ sub InGreaterRift {
+-	return ($instanceid > 0 && (quest::get_data("gr_tier_$instanceid") ne ''));
++	return ($instanceid > 0 && (quest::get_data("gr_tier_$instanceid") ne '' || quest::get_data("raid_instance_$instanceid") ne ''));
+ }
+ 
+ sub HasVoidAccess {

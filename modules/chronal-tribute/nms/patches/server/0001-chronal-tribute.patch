@@ -1,0 +1,69 @@
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -31,2 +31,3 @@
+ #include "quest_parser_collection.h"
++#include "nms_chronal_tribute.h"
+ 
+@@ -189,4 +190,11 @@ void Mob::CalcItemBonuses(StatBonuses* b) {
+ 		if (CastToClient()->GetPP().tribute_active) {
+-			for (auto const &t: CastToClient()->GetPP().tributes) {
+-				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, t.tier);
++			for (int r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
++				auto const &t = CastToClient()->GetPP().tributes[r];
++				if (NmsIsChronalTribute(t.tribute) && !NmsChronalTributeActive(CastToClient(), r)) {
++					continue; // only inside a rift of its band
++				}
++
++				// A Chronal Tribute gives the benefit of the rift's band, up to the tier selected
++				const uint32 tier = NmsIsChronalTribute(t.tribute) ? NmsChronalTributeTier(CastToClient(), t.tier) : t.tier;
++				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, tier);
+ 				if (item_id) {
+--- a/zone/tribute.cpp
++++ b/zone/tribute.cpp
+@@ -25,6 +25,7 @@
+ #include "worldserver.h"
+ 
+ #include "client.h"
++#include "nms_chronal_tribute.h"
+ 
+ #include <map>
+ 
+@@ -79,6 +80,11 @@
+ 				continue;
+ 			}
+ 
++			// Chronal Tributes are paid per rift run instead (NmsChronalTributeRefresh)
++			if (NmsIsChronalTribute(tid)) {
++				continue;
++			}
++
+ 			cost += tier.cost;
+ 		}
+ 
+@@ -102,6 +108,8 @@
+ }
+ 
+ void Client::DoTributeUpdate() {
++	NmsChronalTributeRefresh(this);
++
+ 	EQApplicationPacket outapp(OP_TributeUpdate, sizeof(TributeInfo_Struct));
+ 	TributeInfo_Struct *tis = (TributeInfo_Struct *) outapp.pBuffer;
+ 
+@@ -146,8 +154,16 @@
+ 				continue;
+ 			}
+ 
++			// A Chronal Tribute outside its rift band: no benefit item, so the client doesn't count its stats
++			if (NmsIsChronalTribute(tid) && !NmsChronalTributeActive(this, r)) {
++				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
++					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r);
++				continue;
++			}
++
+ 			TributeData &d = tribute_list[tid];
+-			TributeLevel_Struct &tier = d.tiers[m_pp.tributes[r].tier];
++			const uint32 tier_index = NmsIsChronalTribute(tid) ? NmsChronalTributeTier(this, m_pp.tributes[r].tier) : m_pp.tributes[r].tier;
++			TributeLevel_Struct &tier = d.tiers[tier_index];
+ 			uint32 item_id = tier.tribute_item_id;
+ 
+ 			//summon the item for them

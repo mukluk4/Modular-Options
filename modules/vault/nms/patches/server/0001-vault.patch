@@ -157,15 +157,11 @@
  
  
  void Mob::CalcBonuses()
-@@ -186,6 +187,8 @@
- 	}
- 
+@@ -188,2 +189,4 @@
  	if (IsClient()) {
 +		NmsVaultApplyLockerBonuses(CastToClient(), b);
 +		NmsVaultApplyModBonuses(CastToClient(), b);
  		if (CastToClient()->GetPP().tribute_active) {
- 			for (auto const &t: CastToClient()->GetPP().tributes) {
- 				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, t.tier);
 --- a/zone/client.cpp
 +++ b/zone/client.cpp
 @@ -89,6 +89,7 @@

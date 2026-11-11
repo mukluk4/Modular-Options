@@ -58,7 +58,9 @@ rift.REWARD = {
     SPEED_SECONDS = cfg.reward.speed_seconds,
     SPEED_BONUS   = cfg.reward.speed_bonus,
     PLATINUM_PER_TIER = cfg.reward.platinum_per_tier or 0,
-    FORTUNE_TRIBUTE_ID   = cfg.reward.fortune_tribute_id or 0,
+    -- Chronal Fortune is the 4th Chronal Tribute (chronal-tribute module); 0 when that module is off
+    FORTUNE_TRIBUTE_ID   = cfg.reward.fortune_tribute_id
+        or ((tonumber(eq.get_rule("Custom:ChronalTributeFirstID")) or -3) + 3),
     FORTUNE_PCT_PER_TIER = cfg.reward.fortune_pct_per_tier or 0,
 }
 

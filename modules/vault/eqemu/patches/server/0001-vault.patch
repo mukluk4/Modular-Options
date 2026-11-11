@@ -149,15 +149,11 @@
  
  #include <cstdlib>
  
-@@ -174,6 +175,8 @@
- 	}
- 
+@@ -176,2 +177,4 @@
  	if (IsClient()) {
 +		NmsVaultApplyLockerBonuses(CastToClient(), b);
 +		NmsVaultApplyModBonuses(CastToClient(), b);
  		if (CastToClient()->GetPP().tribute_active) {
- 			for (auto const &t: CastToClient()->GetPP().tributes) {
- 				auto item_id = CastToClient()->LookupTributeItemID(t.tribute, t.tier);
 --- a/zone/client.cpp
 +++ b/zone/client.cpp
 @@ -60,6 +60,7 @@
