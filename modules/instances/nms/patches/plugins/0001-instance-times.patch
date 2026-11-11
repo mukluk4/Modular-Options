@@ -1,0 +1,41 @@
+diff --git a/NMS_instance_utils.pl b/NMS_instance_utils.pl
+index b16f8103..b2d5b5fd 100644
+--- a/NMS_instance_utils.pl
++++ b/NMS_instance_utils.pl
+@@ -2,14 +2,17 @@
+ 
+ use POSIX qw(ceil);
+ 
++# Scale expedition instance NPCs by member count (see ScaleInstanceNPC). 0 = off: NPCs keep their normal stats.
++my $SCALE_INSTANCE_NPCS = 0;
++
+ sub OfferStandardInstance {
+ 	my $client = plugin::val('$client');
+ 	my $npc = plugin::val('$npc');
+ 	my $text = plugin::val('$text');
+ 	my $zonesn = plugin::val('$zonesn');
+ 	my $dz_version = 254;
+-	my $non_respawning_duration = 14 * 60 * 60; # 14 Hours
+-	my $respawning_duration =  30 * 60; # 30 minutes
++	my $non_respawning_duration = 6 * 60 * 60; # 6 Hours
++	my $respawning_duration =  5 * 60; # 5 minutes
+ 	my $dz_lifetime = 7 * 24 * 60 * 60; # 7 Days
+ 	my ($expedition_name, $min_players, $max_players, $dz_zone, $x, $y, $z, $heading) = @_;
+ 
+@@ -47,7 +50,6 @@ sub OfferStandardInstance {
+ 			plugin::NPCTell("I offer you a Trial. $expedition_name lies before you, do you accept the challenge?");
+ 
+ 			if (plugin::IsNMS()) {
+-				plugin::YellowText("Notice: Instances will become more difficult for each player in your group beyond the second.");
+ 				plugin::YellowText("[$non_respawning_link] will not repopulate over time, and the most powerful enemies may be found within.");
+ 				if ($allow_respawning) {
+ 					plugin::YellowText("[$respawning_link] will repopulate over time, but many rare enemies may not be found inside.");
+@@ -111,6 +113,8 @@ sub OfferStandardInstance {
+ }
+ 
+ sub ScaleInstanceNPC {
++	return if !$SCALE_INSTANCE_NPCS;
++
+ 	my $instanceversion = plugin::val('$instanceversion');
+ 	if ($instanceversion != quest::get_rule("Custom:StaticInstanceVersion")) {
+ 		return;

@@ -1,0 +1,339 @@
+--- a/zone/aa.cpp
++++ b/zone/aa.cpp
+@@ -563,6 +563,15 @@
+ 			continue;
+ 		}
+ 
++		if (slot_id >= MAX_PP_AA_ARRAY) {
++			LogError(
++				"ResetAA for [{}] exceeded the player profile AA array capacity of [{}], truncating",
++				GetCleanName(),
++				MAX_PP_AA_ARRAY
++			);
++			break;
++		}
++
+ 		m_pp.aa_array[slot_id].AA      = rank_value.first;
+ 		m_pp.aa_array[slot_id].value   = rank_value.second.first;
+ 		m_pp.aa_array[slot_id].charges = rank_value.second.second;
+@@ -1098,15 +1107,13 @@
+ 			case 586:
+ 			case 587:
+ 			case 588:
+-			case 589:
++			// 589 (Destruction), 5003 (Frantic Infusion), 7019 (Cataclysm) are buyable burns
+ 			case 5000:
+ 			case 5002:
+-			case 5003:
+ 			case 5004:
+ 			case 7016:
+ 			case 7017:
+ 			case 7018:
+-			case 7019:
+ 				aai->grant_only = 1;
+ 				aai->cost = 0;
+ 				aai->total_cost = 0;
+@@ -1146,6 +1153,15 @@
+ 		if(ranks) {
+ 			AA::Rank *rank = aa.second->GetRankByPointsSpent(ranks);
+ 			if(rank) {
++				if (i >= MAX_PP_AA_ARRAY) {
++					LogError(
++						"SendAlternateAdvancementPoints for [{}] exceeded the AA table capacity of [{}], truncating",
++						GetCleanName(),
++						MAX_PP_AA_ARRAY
++					);
++					break;
++				}
++
+ 				aa2->aa_list[i].AA = rank->id;
+ 				aa2->aa_list[i].value = rank->total_cost;
+ 				aa2->aa_list[i].charges = charges;
+@@ -1672,6 +1688,12 @@
+ 
+ 		target_id = GetSpellImpliedTargetID(rank->spell, target_id);
+ 
++		// Directional cones fire from the caster's facing and ignore the spell target.
++		// Resolve missing/unresolvable targets to the caster so shared casting checks don't reject them.
++		if (spells[rank->spell].target_type == ST_Directional && !entity_list.GetMob(target_id)) {
++			target_id = GetID();
++		}
++
+ 		if (RuleB(Custom, MulticlassingEnabled) || (HasClass(Class::Bard) && IsCasting() && spells[rank->spell].cast_time == 0)) {
+ 			if (!DoCastingChecksOnCaster(rank->spell, EQ::spells::CastingSlot::AltAbility)) {
+ 				return;
+@@ -1813,6 +1835,15 @@
+ 		rank = ability->GetRankByPointsSpent(aa_value);
+ 
+ 		if (c->CanUseAlternateAdvancementRank(rank)) {
++			if (slot_id >= MAX_PP_AA_ARRAY) {
++				LogError(
++					"Character [{}] owns more AA ranks than the player profile can hold, truncating at [{}] entries",
++					c->GetCleanName(),
++					MAX_PP_AA_ARRAY
++				);
++				break;
++			}
++
+ 			c->GetPP().aa_array[slot_id].AA      = aa_id;
+ 			c->GetPP().aa_array[slot_id].value   = aa_value;
+ 			c->GetPP().aa_array[slot_id].charges = charges;
+@@ -1943,7 +1974,7 @@
+ 		}
+ 
+ 		// Restrict Fury of Magic rank 6+ to only be available to Pure Casters
+-		if (rank->base_ability->first_rank_id == aaFuryofMagic && rank->id > 772 && rank->id <= 4751) {
++		if (rank->base_ability->first_rank_id == aaFuryofMagic && rank->id > 772) {
+ 			return (GetClassesBits() & 15906);
+ 		}
+ 
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -235,7 +235,7 @@
+ 		aabonuses.HitChanceEffect[skill] +
+ 		spellbonuses.HitChanceEffect[skill];
+ 
+-	if (skill == EQ::skills::SkillArchery) {
++	if (skill == EQ::skills::SkillArchery || skill == EQ::skills::SkillThrowing) {
+ 		hit_bonus += spellbonuses.increase_archery + aabonuses.increase_archery + itembonuses.increase_archery;
+ 		hit_bonus -= hit_bonus * RuleR(Combat, ArcheryHitPenalty);
+ 	}
+@@ -5662,6 +5662,7 @@
+ 	if (critChance > 0) {
+ 		if (zone->random.Roll(critChance)) {
+ 			critMod += GetCritDmgMod(hit.skill, owner);
++			critMod = std::max(critMod, 100);
+ 			hit.damage_done += 5;
+ 			hit.damage_done = (hit.damage_done * critMod) / 100;
+ 
+@@ -5687,9 +5688,7 @@
+ 
+     if ((HasClass(Class::Warrior) || HasClass(Class::Berserker)) && GetLevel() >= 12) {
+         innate_crit = true;
+-    } else if (HasClass(Class::Ranger) && GetLevel() >= 12 && skill == EQ::skills::SkillArchery) {
+-        innate_crit = true;
+-    } else if (HasClass(Class::Rogue) && GetLevel() >= 12 && skill == EQ::skills::SkillThrowing) {
++    } else if ((HasClass(Class::Ranger) || HasClass(Class::Rogue)) && GetLevel() >= 12) {
+         innate_crit = true;
+     }
+ 
+@@ -6743,7 +6742,7 @@
+ 
+ 	// BER weren't parsing the halving
+ 	if (hit.skill == EQ::skills::SkillArchery ||
+-		(hit.skill == EQ::skills::SkillThrowing && GetClass() != Class::Berserker))
++		(hit.skill == EQ::skills::SkillThrowing && !HasClass(Class::Berserker)))
+ 		hit.damage_done /= 2;
+ 
+ 	if (hit.damage_done < 1)
+@@ -6781,6 +6780,12 @@
+ 			hit.damage_done = DoDamageCaps(hit.damage_done);
+ 		}
+ 		hit.damage_done += hit.damage_done * bonus / 100;
++	}
++	else if (hit.skill == EQ::skills::SkillThrowing) {
++		int headshot = TryHeadShot(defender, hit.skill);
++		if (headshot > 0) {
++			hit.damage_done = headshot;
++		}
+ 	}
+ 
+ 	int extra_mincap = 0;
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -1192,8 +1192,12 @@
+ 				newbon->CriticalSpellChance += base_value;
+ 			}
+ 
+-			if (limit_value > newbon->SpellCritDmgIncNoStack) {
+-				newbon->SpellCritDmgIncNoStack = limit_value;
++			newbon->AACritDmgNoStackSum += limit_value;
++
++			if (!RuleB(Custom, AACritDmgNoStackComponentsStack)) {
++				if (limit_value > newbon->SpellCritDmgIncNoStack) {
++					newbon->SpellCritDmgIncNoStack = limit_value;
++				}
+ 			}
+ 
+ 			break;
+--- a/zone/common.h
++++ b/zone/common.h
+@@ -423,6 +423,7 @@
+ 	int32   CriticalProcChance;
+ 	int32	SpellCritDmgIncrease;				//i
+ 	int32	SpellCritDmgIncNoStack;				// increase
++	int32	AACritDmgNoStackSum;				// additive sum of AA SPA 294 crit dmg components (for rule-based stacking)
+ 	int32	DotCritDmgIncrease;					//i
+ 	int32	CriticalHealChance;					//i
+ 	int32   CriticalLifeTapChance;
+--- a/zone/effects.cpp
++++ b/zone/effects.cpp
+@@ -84,8 +84,28 @@
+ 	return base + (GetOwner()->GetSharedSpellCritDmgIncrease() * RuleI(Spells, PetsScaleWithOwnerPercent) / 100);
+ }
+ 
++int Mob::GetAACritDmgNoStackPool() {
++	int aa_pool = aabonuses.AACritDmgNoStackSum;
++	int aa_cap = RuleI(Custom, MaxAACritDmgFocus);
++
++	if (aa_cap > 0 && aa_pool > aa_cap) {
++		aa_pool = aa_cap;
++	}
++
++	if (IsClient() || !IsPet() || (IsNPC() && CastToNPC()->GetSwarmOwner()))
++	{
++		return aa_pool;
++	}
++
++	return aa_pool + (GetOwner()->GetAACritDmgNoStackPool() * RuleI(Spells, PetsScaleWithOwnerPercent) / 100);
++}
++
+ int Mob::GetSharedSpellCritDmgIncNoStack() {
+ 	int base = itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
++
++	if (RuleB(Custom, AACritDmgNoStackComponentsStack)) {
++		base += GetAACritDmgNoStackPool();
++	}
+ 
+ 	if (IsClient() || !IsPet() || (IsNPC() && CastToNPC()->GetSwarmOwner()))
+ 	{
+@@ -507,6 +527,10 @@
+ 
+ 			int64 ratio = 200;
+ 			ratio += GetSharedDotCritDmgIncrease();
++
++			if (RuleB(Custom, DoTCritsShareNoStackPool)) {
++				ratio += GetAACritDmgNoStackPool();
++			}
+ 
+ 			value = value * ratio / 100;
+ 
+--- a/zone/mob.h
++++ b/zone/mob.h
+@@ -371,6 +371,7 @@
+ 	int GetSharedCriticalSpellChance();
+ 	int GetSharedSpellCritDmgIncrease();
+ 	int GetSharedSpellCritDmgIncNoStack();
++	int GetAACritDmgNoStackPool();
+ 	int GetSharedCriticalDoTChance();
+ 	int GetSharedDotCritDmgIncrease();
+ 	int GetSharedCriticalHealChance();
+--- a/zone/special_attacks.cpp
++++ b/zone/special_attacks.cpp
+@@ -90,9 +90,9 @@
+ 			}
+ 
+ 			if (RuleB(Character, ItemExtraSkillDamageCalcAsPercent) && GetSkillDmgAmt(skill) > 0) {
+-				return static_cast<int>(ac_bonus + skill_bonus) * std::abs(GetSkillDmgAmt(skill) / 100);
+-			}
+-			return static_cast<int>(ac_bonus + skill_bonus);
++				return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
++			}
++			return base + static_cast<int>(ac_bonus + skill_bonus);
+ 		}
+ 
+ 		case EQ::skills::SkillKick:
+@@ -112,9 +112,9 @@
+ 			if (skill_level >= 175) base++;
+ 
+ 			if (RuleB(Character, ItemExtraSkillDamageCalcAsPercent) && GetSkillDmgAmt(skill) > 0) {
+-				return static_cast<int>(ac_bonus + skill_bonus) * std::abs(GetSkillDmgAmt(skill) / 100);
+-			}
+-			return static_cast<int>(ac_bonus + skill_bonus);
++				return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
++			}
++			return base + static_cast<int>(ac_bonus + skill_bonus);
+ 		}
+ 
+ 		case EQ::skills::SkillBash: {
+@@ -145,9 +145,9 @@
+ 			}
+ 
+ 			if (RuleB(Character, ItemExtraSkillDamageCalcAsPercent) && GetSkillDmgAmt(skill) > 0) {
+-				return static_cast<int>(ac_bonus + skill_bonus) * std::abs(GetSkillDmgAmt(skill) / 100);
+-			}
+-			return static_cast<int>(ac_bonus + skill_bonus);
++				return (base + static_cast<int>(ac_bonus + skill_bonus)) * std::abs(GetSkillDmgAmt(skill) / 100);
++			}
++			return base + static_cast<int>(ac_bonus + skill_bonus);
+ 		}
+ 
+ 		case EQ::skills::SkillBackstab: {
+@@ -2672,7 +2672,7 @@
+ 	if (
+ 		defender &&
+ 		!defender->IsOfClientBot() &&
+-		skillInUse == EQ::skills::SkillArchery &&
++		(skillInUse == EQ::skills::SkillArchery || skillInUse == EQ::skills::SkillThrowing) &&
+ 		GetTarget() == defender &&
+ 		(defender->GetBodyType() == BodyType::Humanoid || !RuleB(Combat, HeadshotOnlyHumanoids)) &&
+ 		!defender->GetSpecialAbility(SpecialAbility::HeadshotImmunity)
+--- a/zone/spell_effects.cpp
++++ b/zone/spell_effects.cpp
+@@ -7379,6 +7379,10 @@
+ 
+ 		int32 Total3 = 0;
+ 
++		bool sum_aa_focus = RuleB(Custom, AAFocusEffectsStack);
++		bool is_dmg_focus = (type == focusImprovedDamage || type == focusImprovedDamage2 ||
++			type == focusFcDamagePctCrit || type == focusFcDamageAmtCrit);
++
+ 		for (const auto &aa : aa_ranks) {
+ 			auto ability_rank = zone->GetAlternateAdvancementAbilityAndRank(aa.first, aa.second.first);
+ 			auto ability = ability_rank.first;
+@@ -7397,11 +7401,26 @@
+ 			}
+ 
+ 			Total3 = CalcAAFocus(type, *rank, spell_id);
+-			if (Total3 > 0 && realTotal3 >= 0 && Total3 > realTotal3) {
++			if (sum_aa_focus) {
++				realTotal3 += Total3;
++			}
++			else if (Total3 > 0 && realTotal3 >= 0 && Total3 > realTotal3) {
+ 				realTotal3 = Total3;
+ 			}
+ 			else if (Total3 < 0 && Total3 < realTotal3) {
+ 				realTotal3 = Total3;
++			}
++		}
++
++		if (sum_aa_focus && is_dmg_focus) {
++			int32 aa_focus_cap = RuleI(Custom, MaxAACritDmgFocus);
++			if (aa_focus_cap > 0) {
++				if (realTotal3 > aa_focus_cap) {
++					realTotal3 = aa_focus_cap;
++				}
++				else if (realTotal3 < -aa_focus_cap) {
++					realTotal3 = -aa_focus_cap;
++				}
+ 			}
+ 		}
+ 	}
+@@ -11119,6 +11138,27 @@
+ 	}
+ 	// Racial Illusions
+ 	else {
++		// Beastlord Warder Form (Bestial Alignment): mirror the beastlord pet chart
++		// (pets_beastlord_data) for each recipient's own race. Falls back to the
++		// generic wolf illusion below if the race has no valid chart entry.
++		if (spell_id == 30738 || spell_id == 16443) {
++			auto warder = content_db.GetBeastlordPetData(this->GetBaseRace());
++			bool valid  = (warder.race_id != Race::Wolf || this->GetBaseRace() == Race::Wolf);
++			if (valid) {
++				SendIllusionPacket(
++					AppearanceStruct{
++						.face           = static_cast<uint8>(warder.face),
++						.gender_id      = static_cast<uint8>(warder.gender),
++						.helmet_texture = static_cast<uint8>(warder.helm_texture),
++						.race_id        = static_cast<uint16>(warder.race_id),
++						.size           = this->GetBaseSize() * warder.size_modifier,
++						.texture        = static_cast<uint8>(warder.texture),
++					}
++				);
++				return;
++			}
++		}
++
+ 		auto gender_id = (
+ 			max > 0 &&
+ 			(

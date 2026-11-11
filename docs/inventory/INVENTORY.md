@@ -468,3 +468,13 @@ dynamic items and the vault). As modules they become SQL files in each module, t
 
 1. Phase 2 (done): `tools/modules.py`, the install hooks and the module format. See `docs/FRAMEWORK.md`.
 2. Phase 3: move the modules in one at a time, each installed alone and together on both bases.
+
+## Notes from moving modules
+
+- `core_blocks.csv` lists added lines only. Lines a change only deleted have no head line and are missing from it;
+  `tools/dev/leftover_deletions.py` finds them after an install. So far: `triptych-aa` removes `case 589`, `case 5003`
+  and `case 7019` from the NMS grant-only list in `zone/aa.cpp` (base lines 1101, 1104, 1109), and `dynamic-items`
+  removes one `SendWindow` declaration from `zone/client.h` (base line 1455).
+- `core-fixes` also has two fixes made after the inventory was measured, cut from Voidforged commits `9f54e9a4`
+  (fallback heal message, `zone/attack.cpp`) and `4578da87` (feign death while moving, `zone/client_packet.cpp`).
+- The server buff call on zone boot (`zone/zone.cpp` 1265-1267) belongs to `core-fixes`, not `gear-sets`.

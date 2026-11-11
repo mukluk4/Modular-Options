@@ -1,0 +1,90 @@
+diff --git a/zone/attack.cpp b/zone/attack.cpp
+index 17b5f7d74..969ead346 100644
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -6403,8 +6403,14 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
+ 			}
+ 		}
+ 	}
+-	else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == Class::Berserker && GetLevel() > 50) {
+-		extra_mincap = 4 * GetLevel() / 5;
++	else if (hit.skill == EQ::skills::SkillFrenzy && GetClass() == Class::Berserker) {
++		int decap = TryDecapitation(defender, hit.skill);
++		if (decap > 0) {
++			hit.damage_done = decap;
++		}
++		else if (GetLevel() > 50) {
++			extra_mincap = 4 * GetLevel() / 5;
++		}
+ 	}
+ 
+ 	// this has some weird ordering
+diff --git a/zone/mob.h b/zone/mob.h
+index bd7d84a02..24d206a87 100644
+--- a/zone/mob.h
++++ b/zone/mob.h
+@@ -246,6 +246,7 @@ public:
+ 	virtual bool TryFinishingBlow(Mob *defender, int64 &damage);
+ 	int TryHeadShot(Mob* defender, EQ::skills::SkillType skillInUse);
+ 	int TryAssassinate(Mob* defender, EQ::skills::SkillType skillInUse);
++	int TryDecapitation(Mob* defender, EQ::skills::SkillType skillInUse);
+ 	virtual void DoRiposte(Mob* defender);
+ 	void ApplyMeleeDamageMods(uint16 skill, int64 &damage, Mob * defender = nullptr, ExtraAttackOptions *opts = nullptr);
+ 	int ACSum(bool skip_caps = false);
+diff --git a/zone/special_attacks.cpp b/zone/special_attacks.cpp
+index 0b3e30e65..7f6d8edd0 100644
+--- a/zone/special_attacks.cpp
++++ b/zone/special_attacks.cpp
+@@ -2483,6 +2483,52 @@ int Mob::TryHeadShot(Mob *defender, EQ::skills::SkillType skillInUse)
+ 	return 0;
+ }
+ 
++// Berserker Decapitation: Headshot for Frenzy. The server has no Decapitation spell effect, so the level cap and
++// damage come from the Decapitation AA rank (aaDecapitation); Headshot's immunity and humanoid rule apply.
++int Mob::TryDecapitation(Mob *defender, EQ::skills::SkillType skillInUse)
++{
++	// Level cap and damage by rank, matching Headshot at the same caps
++	static const struct { uint8 level; uint32 damage; } decap_ranks[] = {
++		{ 60, 55400 }, { 62, 60280 }, { 64, 65440 }, { 66, 70880 }, { 68, 76600 }, { 70, 82600 },
++	};
++
++	if (
++		!defender ||
++		defender->IsOfClientBot() ||
++		skillInUse != EQ::skills::SkillFrenzy ||
++		GetClass() != Class::Berserker ||
++		GetTarget() != defender ||
++		(defender->GetBodyType() != BodyType::Humanoid && RuleB(Combat, HeadshotOnlyHumanoids)) ||
++		defender->GetSpecialAbility(SpecialAbility::HeadshotImmunity)
++	) {
++		return 0;
++	}
++
++	const uint32 rank = GetAA(aaDecapitation);
++	if (!rank) {
++		return 0;
++	}
++
++	const auto &r = decap_ranks[std::min<uint32>(rank, std::size(decap_ranks)) - 1];
++	if (defender->GetLevel() > r.level) {
++		return 0;
++	}
++
++	int chance = GetDEX();
++	chance = 100 * chance / (chance + 3500);
++	if (IsOfClientBot()) {
++		chance += GetHeroicDEX() / 25;
++	}
++	chance *= 10;
++
++	if (zone->random.Int(1, 1000) > chance) {
++		return 0;
++	}
++
++	entity_list.MessageClose(this, false, 200, Chat::MeleeCrit, "%s decapitates %s!", GetCleanName(), defender->GetCleanName());
++	return r.damage;
++}
++
+ int Mob::TryAssassinate(Mob *defender, EQ::skills::SkillType skillInUse)
+ {
+ 	if (

@@ -1,0 +1,32 @@
+diff --git a/zone/attack.cpp b/zone/attack.cpp
+index 17b5f7d74..371adb3ec 100644
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -4850,7 +4850,8 @@ void Mob::HealDamage(uint64 amount, Mob* caster, uint16 spell_id)
+ 				}
+ 			}
+ 		} else if (
+-			CastToClient()->GetFilter(FilterHealOverTime) != FilterShowSelfOnly ||
++			// Only players get this message. The heal is on themselves, so "self only" shows it; only Hide hides it.
++			IsClient() &&
+ 			CastToClient()->GetFilter(FilterHealOverTime) != FilterHide
+ 		) {
+ 			Message(Chat::NonMelee, "You have been healed for %d points of damage.", acthealed);
+diff --git a/zone/zone.cpp b/zone/zone.cpp
+index e0c6c44bc..f7e147eee 100644
+--- a/zone/zone.cpp
++++ b/zone/zone.cpp
+@@ -258,8 +258,12 @@ bool Zone::LoadZoneObjects()
+ 		position.y = data.y;
+ 		position.z = data.z;
+ 
++		// Keep the stored z where the map has no floor, or the object lands at BEST_Z_INVALID
+ 		if (zone->HasMap()) {
+-			data.z = zone->zonemap->FindBestZ(position, nullptr);
++			const float best_z = zone->zonemap->FindBestZ(position, nullptr);
++			if (best_z != BEST_Z_INVALID) {
++				data.z = best_z;
++			}
+ 		}
+ 
+ 		EQ::ItemInstance *inst = nullptr;

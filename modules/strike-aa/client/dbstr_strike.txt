@@ -1,0 +1,2 @@
+14200^1^Decapitation^0
+14200^4^(BER) [/alt toggle 133]<br>Your Frenzy attacks inflict significantly more damage whenever they critically hit, and you become increasingly likely to land critical hits when using Frenzy. Your Frenzy attacks can also decapitate a humanoid target for massive damage. Rank 1 works on targets up to level 60, and each further rank raises that by 2 levels, to 70 at rank 6.^0

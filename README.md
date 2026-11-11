@@ -15,8 +15,8 @@ The modules come from Voidforged, an NMS-based server, and its single-class sibl
 
 ## Status
 
-Work in progress. Modules so far: `merchant-buckets`, `vault`, `loot-offers`, `paragon-aa`, `platinum-economy` and
-`qol`; the rest are being moved in.
+Work in progress. Modules so far: `merchant-buckets`, `vault`, `loot-offers`, `paragon-aa`, `platinum-economy`,
+`qol`, `core-fixes`, `strike-aa`, `triptych-aa`, `pet-power`, `instances` and `multiclass-bard`; the rest are being moved in.
 
 1. **Inventory** (done): every Voidforged addition mapped to a module. See `docs/inventory/INVENTORY.md`.
 2. **Database changes** (done): every content change compared with the NMS release database, by module. See

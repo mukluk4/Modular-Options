@@ -1,0 +1,36 @@
+--- a/zone/client.cpp
++++ b/zone/client.cpp
+@@ -12269,11 +12269,28 @@
+ 			continue;
+ 		}
+ 
+-		if (max_level && spells[spell_id].classes[m_pp.class_ - 1] > max_level) {
+-			continue;
+-		}
+-
+-		if (min_level > 1 && spells[spell_id].classes[m_pp.class_ - 1] < min_level) {
++		// Multiclass characters all store Bard as their base class, so check every class they have
++		const uint32 classes_bits = GetClassesBits();
++		bool any_class_usable = false;
++		for (uint8 class_id = Class::Warrior; class_id <= Class::PLAYER_CLASS_COUNT; ++class_id) {
++			if (!(classes_bits & GetPlayerClassBit(class_id))) {
++				continue;
++			}
++
++			const uint8 class_level = spells[spell_id].classes[class_id - 1];
++			if (max_level && class_level > max_level) {
++				continue;
++			}
++
++			if (min_level > 1 && class_level < min_level) {
++				continue;
++			}
++
++			any_class_usable = true;
++			break;
++		}
++
++		if (!any_class_usable) {
+ 			continue;
+ 		}
+ 

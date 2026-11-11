@@ -1,0 +1,6 @@
+{
+	"name": "triptych-aa",
+	"title": "AA and archery fixes",
+	"description": "Spell damage and critical damage AAs that stack across AA lines (from Triptych), Ranger and Rogue innate crits on every skill, Headshot and archery bonuses for Throwing, Beastlord Warder Form by race, and guards for characters with more AA ranks than the profile holds. On NMS also buyable Destruction, Frantic Infusion and Cataclysm, Fury of Magic past rank 5 for pure casters at every rank, directional AA cones, and skill attacks keeping their base damage.",
+	"bases": ["eqemu", "nms"]
+}

@@ -1,0 +1,6 @@
+{
+	"name": "multiclass-bard",
+	"title": "Multiclass disciplines",
+	"description": "Multiclass characters (stored with Bard as their base class) can learn the disciplines of every class they have, not only Bard's.",
+	"bases": ["nms"]
+}

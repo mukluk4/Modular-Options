@@ -1,0 +1,265 @@
+diff --git a/zone/aa.cpp b/zone/aa.cpp
+index 984386d40..f84706a6e 100644
+--- a/zone/aa.cpp
++++ b/zone/aa.cpp
+@@ -531,6 +531,15 @@ void Client::ResetAA()
+ 			continue;
+ 		}
+ 
++		if (slot_id >= MAX_PP_AA_ARRAY) {
++			LogError(
++				"ResetAA for [{}] exceeded the player profile AA array capacity of [{}], truncating",
++				GetCleanName(),
++				MAX_PP_AA_ARRAY
++			);
++			break;
++		}
++
+ 		m_pp.aa_array[slot_id].AA      = rank_value.first;
+ 		m_pp.aa_array[slot_id].value   = rank_value.second.first;
+ 		m_pp.aa_array[slot_id].charges = rank_value.second.second;
+@@ -1003,6 +1012,15 @@ void Client::SendAlternateAdvancementPoints() {
+ 		if(ranks) {
+ 			AA::Rank *rank = aa.second->GetRankByPointsSpent(ranks);
+ 			if(rank) {
++				if (i >= MAX_PP_AA_ARRAY) {
++					LogError(
++						"SendAlternateAdvancementPoints for [{}] exceeded the AA table capacity of [{}], truncating",
++						GetCleanName(),
++						MAX_PP_AA_ARRAY
++					);
++					break;
++				}
++
+ 				aa2->aa_list[i].AA = rank->id;
+ 				aa2->aa_list[i].value = rank->total_cost;
+ 				aa2->aa_list[i].charges = charges;
+@@ -1447,6 +1465,15 @@ bool ZoneDatabase::LoadAlternateAdvancement(Client *c) {
+ 		rank = ability->GetRankByPointsSpent(aa_value);
+ 
+ 		if (c->CanUseAlternateAdvancementRank(rank)) {
++			if (slot_id >= MAX_PP_AA_ARRAY) {
++				LogError(
++					"Character [{}] owns more AA ranks than the player profile can hold, truncating at [{}] entries",
++					c->GetCleanName(),
++					MAX_PP_AA_ARRAY
++				);
++				break;
++			}
++
+ 			c->GetPP().aa_array[slot_id].AA      = aa_id;
+ 			c->GetPP().aa_array[slot_id].value   = aa_value;
+ 			c->GetPP().aa_array[slot_id].charges = charges;
+diff --git a/zone/attack.cpp b/zone/attack.cpp
+index 17b5f7d74..5fe33d11c 100644
+--- a/zone/attack.cpp
++++ b/zone/attack.cpp
+@@ -222,7 +222,7 @@ int Mob::GetTotalToHit(EQ::skills::SkillType skill, int chance_mod)
+ 		aabonuses.HitChanceEffect[skill] +
+ 		spellbonuses.HitChanceEffect[skill];
+ 
+-	if (skill == EQ::skills::SkillArchery) {
++	if (skill == EQ::skills::SkillArchery || skill == EQ::skills::SkillThrowing) {
+ 		hit_bonus += spellbonuses.increase_archery + aabonuses.increase_archery + itembonuses.increase_archery;
+ 		hit_bonus -= hit_bonus * RuleR(Combat, ArcheryHitPenalty);
+ 	}
+@@ -5329,6 +5329,7 @@ void Mob::TryPetCriticalHit(Mob *defender, DamageHitInfo &hit)
+ 	if (critChance > 0) {
+ 		if (zone->random.Roll(critChance)) {
+ 			critMod += GetCritDmgMod(hit.skill, owner);
++			critMod = std::max(critMod, 100);
+ 			hit.damage_done += 5;
+ 			hit.damage_done = (hit.damage_done * critMod) / 100;
+ 
+@@ -5434,9 +5435,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
+ 	int crit_chance = GetCriticalChanceBonus(hit.skill);
+ 	if ((GetClass() == Class::Warrior || GetClass() == Class::Berserker) && GetLevel() >= 12) {
+ 		innate_crit = true;
+-	} else if (GetClass() == Class::Ranger && GetLevel() >= 12 && hit.skill == EQ::skills::SkillArchery) {
+-		innate_crit = true;
+-	} else if (GetClass() == Class::Rogue && GetLevel() >= 12 && hit.skill == EQ::skills::SkillThrowing) {
++	} else if ((GetClass() == Class::Ranger || GetClass() == Class::Rogue) && GetLevel() >= 12) {
+ 		innate_crit = true;
+ 	}
+ 
+@@ -6383,6 +6382,12 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
+ 		//Scale Factor for Archery Damage Tuning
+ 		hit.damage_done *= RuleR(Combat, ArcheryBaseDamageBonus);
+ 	}
++	else if (hit.skill == EQ::skills::SkillThrowing) {
++		int headshot = TryHeadShot(defender, hit.skill);
++		if (headshot > 0) {
++			hit.damage_done = headshot;
++		}
++	}
+ 
+ 	int extra_mincap = 0;
+ 	int min_mod = hit.base_damage * GetMeleeMinDamageMod_SE(hit.skill) / 100;
+diff --git a/zone/bonuses.cpp b/zone/bonuses.cpp
+index 131bf0f27..4d8d79125 100644
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -1149,7 +1149,9 @@ void Mob::ApplyAABonuses(const AA::Rank &rank, StatBonuses *newbon)
+ 		case SpellEffect::CriticalSpellChance: {
+ 			newbon->CriticalSpellChance += base_value;
+ 
+-			if (limit_value > newbon->SpellCritDmgIncNoStack)
++			newbon->AACritDmgNoStackSum += limit_value;
++
++			if (!RuleB(Custom, AACritDmgNoStackComponentsStack) && limit_value > newbon->SpellCritDmgIncNoStack)
+ 				newbon->SpellCritDmgIncNoStack = limit_value;
+ 
+ 			break;
+diff --git a/zone/common.h b/zone/common.h
+index 1ab8bf2d0..d6743df29 100644
+--- a/zone/common.h
++++ b/zone/common.h
+@@ -372,6 +372,7 @@ struct StatBonuses {
+ 	int32	CriticalSpellChance;				//i
+ 	int32	SpellCritDmgIncrease;				//i
+ 	int32	SpellCritDmgIncNoStack;				// increase
++	int32	AACritDmgNoStackSum;				// additive sum of AA SPA 294 crit dmg components (for rule-based stacking)
+ 	int32	DotCritDmgIncrease;					//i
+ 	int32	CriticalHealChance;					//i
+ 	int32	CriticalHealOverTime;				//i
+diff --git a/zone/effects.cpp b/zone/effects.cpp
+index 0d0b1ce34..cc10bf9a3 100644
+--- a/zone/effects.cpp
++++ b/zone/effects.cpp
+@@ -36,6 +36,18 @@ float Mob::GetActSpellRange(uint16 spell_id, float range)
+ 	return (range * extrange) / 100;
+ }
+ 
++// Every AA's SPA 294 critical damage part summed (Custom:AACritDmgNoStackComponentsStack), capped at Custom:MaxAACritDmgFocus
++int Mob::GetAACritDmgNoStackPool() {
++	int aa_pool = aabonuses.AACritDmgNoStackSum;
++	int aa_cap = RuleI(Custom, MaxAACritDmgFocus);
++
++	if (aa_cap > 0 && aa_pool > aa_cap) {
++		aa_pool = aa_cap;
++	}
++
++	return aa_pool;
++}
++
+ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
+ 	if (spells[spell_id].target_type == ST_Self) {
+ 		return value;
+@@ -80,6 +92,9 @@ int64 Mob::GetActSpellDamage(uint16 spell_id, int64 value, Mob* target) {
+ 			Critical = true;
+ 			ratio += itembonuses.SpellCritDmgIncrease + spellbonuses.SpellCritDmgIncrease + aabonuses.SpellCritDmgIncrease;
+ 			ratio += itembonuses.SpellCritDmgIncNoStack + spellbonuses.SpellCritDmgIncNoStack + aabonuses.SpellCritDmgIncNoStack;
++			if (RuleB(Custom, AACritDmgNoStackComponentsStack)) {
++				ratio += GetAACritDmgNoStackPool();
++			}
+ 		} else if ((IsOfClientBot() && GetClass() == Class::Wizard) || (IsMerc() && GetClass() == CASTERDPS)) {
+ 			if ((GetLevel() >= RuleI(Spells, WizCritLevel)) && zone->random.Roll(RuleI(Spells, WizCritChance))) {
+ 				//Wizard innate critical chance is calculated seperately from spell effect and is not a set ratio. (20-70 is parse confirmed)
+@@ -268,6 +283,9 @@ int64 Mob::GetActDoTDamage(uint16 spell_id, int64 value, Mob* target, bool from_
+ 	if (!spells[spell_id].good_effect && chance > 0 && (zone->random.Roll(chance))) {
+ 		int64 ratio = 200;
+ 		ratio += itembonuses.DotCritDmgIncrease + spellbonuses.DotCritDmgIncrease + aabonuses.DotCritDmgIncrease;
++		if (RuleB(Custom, DoTCritsShareNoStackPool)) {
++			ratio += GetAACritDmgNoStackPool();
++		}
+ 		value = base_value*ratio/100;
+ 		value += int64(base_value*GetFocusEffect(focusImprovedDamage, spell_id, nullptr, from_buff_tic)/100)*ratio/100;
+ 		value += int64(base_value*GetFocusEffect(focusImprovedDamage2, spell_id, nullptr, from_buff_tic)/100)*ratio/100;
+diff --git a/zone/mob.h b/zone/mob.h
+index bd7d84a02..b3e03e079 100644
+--- a/zone/mob.h
++++ b/zone/mob.h
+@@ -357,6 +357,7 @@ public:
+ 	float GetActSpellRange(uint16 spell_id, float range);
+ 	int64 GetActSpellDamage(uint16 spell_id, int64 value, Mob* target = nullptr);
+ 	int64 GetActDoTDamage(uint16 spell_id, int64 value, Mob* target, bool from_buff_tic = true);
++	int GetAACritDmgNoStackPool();
+ 	int64 GetActSpellHealing(uint16 spell_id, int64 value, Mob* target = nullptr, bool from_buff_tic = false);
+ 	int32 GetActSpellCost(uint16 spell_id, int32 cost);
+ 	virtual int32 GetActSpellDuration(uint16 spell_id, int32 duration);
+diff --git a/zone/special_attacks.cpp b/zone/special_attacks.cpp
+index 0b3e30e65..87a1e1970 100644
+--- a/zone/special_attacks.cpp
++++ b/zone/special_attacks.cpp
+@@ -2451,7 +2451,7 @@ int Mob::TryHeadShot(Mob *defender, EQ::skills::SkillType skillInUse)
+ 	if (
+ 		defender &&
+ 		!defender->IsOfClientBot() &&
+-		skillInUse == EQ::skills::SkillArchery &&
++		(skillInUse == EQ::skills::SkillArchery || skillInUse == EQ::skills::SkillThrowing) &&
+ 		GetTarget() == defender &&
+ 		(defender->GetBodyType() == BodyType::Humanoid || !RuleB(Combat, HeadshotOnlyHumanoids)) &&
+ 		!defender->GetSpecialAbility(SpecialAbility::HeadshotImmunity)
+diff --git a/zone/spell_effects.cpp b/zone/spell_effects.cpp
+index 9c0cb8d05..08689b0d8 100644
+--- a/zone/spell_effects.cpp
++++ b/zone/spell_effects.cpp
+@@ -6804,6 +6804,10 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
+ 
+ 		int32 Total3 = 0;
+ 
++		bool sum_aa_focus = RuleB(Custom, AAFocusEffectsStack);
++		bool is_dmg_focus = (type == focusImprovedDamage || type == focusImprovedDamage2 ||
++			type == focusFcDamagePctCrit || type == focusFcDamageAmtCrit);
++
+ 		for (const auto &aa : aa_ranks) {
+ 			auto ability_rank = zone->GetAlternateAdvancementAbilityAndRank(aa.first, aa.second.first);
+ 			auto ability = ability_rank.first;
+@@ -6818,13 +6822,28 @@ int64 Mob::GetFocusEffect(focusType type, uint16 spell_id, Mob *caster, bool fro
+ 			}
+ 
+ 			Total3 = CalcAAFocus(type, *rank, spell_id);
+-			if (Total3 > 0 && realTotal3 >= 0 && Total3 > realTotal3) {
++			if (sum_aa_focus) {
++				realTotal3 += Total3;
++			}
++			else if (Total3 > 0 && realTotal3 >= 0 && Total3 > realTotal3) {
+ 				realTotal3 = Total3;
+ 			}
+ 			else if (Total3 < 0 && Total3 < realTotal3) {
+ 				realTotal3 = Total3;
+ 			}
+ 		}
++
++		if (sum_aa_focus && is_dmg_focus) {
++			int32 aa_focus_cap = RuleI(Custom, MaxAACritDmgFocus);
++			if (aa_focus_cap > 0) {
++				if (realTotal3 > aa_focus_cap) {
++					realTotal3 = aa_focus_cap;
++				}
++				else if (realTotal3 < -aa_focus_cap) {
++					realTotal3 = -aa_focus_cap;
++				}
++			}
++		}
+ 	}
+ 
+ 	if (type == focusReagentCost && (IsEffectInSpell(spell_id, SpellEffect::SummonItem) || IsSacrificeSpell(spell_id))) {
+@@ -10466,6 +10485,27 @@ void Mob::ApplySpellEffectIllusion(int32 spell_id, Mob *caster, int buffslot, in
+ 	}
+ 	// Racial Illusions
+ 	else {
++		// Beastlord Warder Form (Bestial Alignment): mirror the beastlord pet chart
++		// (pets_beastlord_data) for each recipient's own race. Falls back to the
++		// generic wolf illusion below if the race has no valid chart entry.
++		if (spell_id == 30738 || spell_id == 16443) {
++			auto warder = content_db.GetBeastlordPetData(this->GetBaseRace());
++			bool valid  = (warder.race_id != Race::Wolf || this->GetBaseRace() == Race::Wolf);
++			if (valid) {
++				SendIllusionPacket(
++					AppearanceStruct{
++						.face           = static_cast<uint8>(warder.face),
++						.gender_id      = static_cast<uint8>(warder.gender),
++						.helmet_texture = static_cast<uint8>(warder.helm_texture),
++						.race_id        = static_cast<uint16>(warder.race_id),
++						.size           = this->GetBaseSize() * warder.size_modifier,
++						.texture        = static_cast<uint8>(warder.texture),
++					}
++				);
++				return;
++			}
++		}
++
+ 		auto gender_id = (
+ 			max > 0 &&
+ 			(

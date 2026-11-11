@@ -1,0 +1,6 @@
+{
+	"name": "strike-aa",
+	"title": "Strike AAs to 70",
+	"description": "Headshot and Assassinate ranks up to level 70, a Dire Charm II rank for Enchanters, Druids and Necromancers that charms up to level 70, and Berserker Decapitation as a Headshot-style Frenzy proc with six ranks (60 to 70).",
+	"bases": ["eqemu", "nms"]
+}

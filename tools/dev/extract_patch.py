@@ -5,8 +5,10 @@
                                       --file <path> --lines 10-20,35-36 [--file ... --lines ...] [--out <patch>]
 
 --lines are line numbers in the head version of the file. Lines added at head inside those ranges are kept; everything
-else stays as it is in the base. A replaced block is taken whole when all of its new lines are selected, and left
-alone when none are. Paths in the patch are relative to --prefix.
+else stays as it is in the base. Lines the head only deleted have no head line number: select them with a b prefix and
+their base line numbers (b1101 or b1101-1103; with --after, numbers in the base after those patches). A deletion within
+three lines of selected lines that isn't selected is reported, since it usually belongs to the same change. A
+replaced block is taken whole when all of its new lines are selected, and left alone when none are. Paths in the patch are relative to --prefix.
 
 When the module requires another module that edits the same files, pass that module's patch with --after: the hunks
 are then cut against the base with it applied, so they still fit when install applies them in order.
@@ -42,11 +44,14 @@ def patched(lines, name, patches):
 
 
 def ranges(text):
-    out = set()
+    """Head line numbers to keep, and base line numbers (b prefix) to delete."""
+    keep, drop = set(), set()
     for part in text.split(','):
-        a, _, b = part.partition('-')
-        out.update(range(int(a), int(b or a) + 1))
-    return out
+        part = part.strip()
+        into = drop if part.startswith('b') else keep
+        a, _, b = part.lstrip('b').partition('-')
+        into.update(range(int(a), int(b or a) + 1))
+    return keep, drop
 
 
 def shift_inserts(ops, head, keep):
@@ -74,13 +79,16 @@ def shift_inserts(ops, head, keep):
     return added
 
 
-def cut(base, head, keep, name, warn):
+def cut(base, head, keep, name, warn, drop=frozenset()):
     result = []
     ops = difflib.SequenceMatcher(None, base, head, autojunk=False).get_opcodes()
     added = shift_inserts(ops, head, keep)
     for tag, i1, i2, j1, j2 in ops:
         if tag == 'delete':
-            result += base[i1:i2]
+            result += [base[i] for i in range(i1, i2) if i + 1 not in drop]
+            if not any(i + 1 in drop for i in range(i1, i2)) and any(j in keep for j in range(j1 - 2, j1 + 4)):
+                warn(f'{name}: base lines {i1 + 1}-{i2} were deleted at head beside selected lines but are not selected '
+                     f'(select them with b{i1 + 1}-{i2})')
             continue
         if tag == 'equal':
             result += [head[j] for j in range(j1, j2) if j not in added or j + 1 in keep]
@@ -117,7 +125,8 @@ def main():
     out = []
     for f, l in zip(a.file, a.lines):
         base, head = patched(show(a.repo, a.base, prefix + f), f, a.after), show(a.repo, a.head, prefix + f)
-        new = cut(base, head, ranges(l), f, lambda m: print('warning: ' + m, file=sys.stderr))
+        keep, drop = ranges(l)
+        new = cut(base, head, keep, f, lambda m: print('warning: ' + m, file=sys.stderr), drop)
         for line in difflib.unified_diff(base, new, 'a/' + f, 'b/' + f, n=3):
             out.append(line if line.endswith('\n') else line + '\n\\ No newline at end of file\n')
     text = ''.join(out)

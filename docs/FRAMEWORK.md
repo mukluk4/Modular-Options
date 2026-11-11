@@ -133,4 +133,6 @@ build `zone`, or compile just the files install touched.
 
 `tools/dev/extract_patch.py` cuts one module's lines out of a combined change (for example the Voidforged history) into
 a patch against the base. Give it the head line ranges that belong to the module; `docs/inventory/core_blocks.csv`
-lists them.
+lists them. Lines the change only deleted have no head line, so the CSV misses them: select those with their base line
+numbers and a `b` prefix (`--lines 120-130,b98`). The tool warns about unselected deletions next to selected lines,
+but a deletion further away is only caught by comparing the installed tree with the source.

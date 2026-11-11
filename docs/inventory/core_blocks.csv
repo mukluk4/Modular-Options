@@ -203,7 +203,8 @@ gear-sets,zone/inventory.cpp,4160-4160,1,446474fc,"GearSetDelete(this, bds->Numb
 gear-sets,zone/inventory.cpp,4310-4312,3,446474fc,// Full gear sets: the client has moved the weapons; the server moves the rest and tells the client
 gear-sets,zone/spell_effects.cpp,7023-7039,17,6122838f,// Armor set bonus spell-cast procs: checked like an item focus with no proc rate of its own
 gear-sets,zone/spell_effects.cpp,7327-7357,31,0007bdd0,if (IsClient()) {
-gear-sets,zone/zone.cpp,1262-1267,6,44a10589,"LogInfo(""Loading Armor Set Bonuses..."");"
+gear-sets,zone/zone.cpp,1262-1264,3,44a10589,"LogInfo(""Loading Armor Set Bonuses..."");"
+core-fixes,zone/zone.cpp,1265-1267,3,44a10589,"// NMS: keep the permanent server buffs running all the time, not only after a rules reload"
 glamour,common/ruletypes.h,1320-1320,1,f64b854e,"RULE_BOOL(Custom,   BlockGlamourResale,					true, ""Merchants refuse to buy \""Glamour - '...'\"" ornaments (they"
 glamour,zone/client_packet.cpp,14253-14254,2,335be95c,// NMS: glamours carry a purchase price for the glamour vendors but have no resale value; the Purveyor
 glamour,zone/client_packet.cpp,14255-14255,1,f64b854e,"if (RuleB(Custom, BlockGlamourResale) && Strings::BeginsWith(item->Name, ""Glamour - "")) {"

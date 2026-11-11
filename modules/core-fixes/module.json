@@ -1,0 +1,6 @@
+{
+	"name": "core-fixes",
+	"title": "Bug fixes",
+	"description": "Server bug fixes: zone objects where the map has no floor, the fallback heal message, and on NMS the suppressed-buff crash, target's target procs, zone-state loot links, server buffs on zone boot and feign death while moving.",
+	"bases": ["eqemu", "nms"]
+}

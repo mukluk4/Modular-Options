@@ -1,0 +1,6 @@
+{
+	"name": "instances",
+	"title": "Instance times",
+	"description": "Shorter NMS instance lockouts (non-respawning 6 hours, respawning 5 minutes, Plane of Time 6 hours) and a switch that turns off the per-member NPC scaling in expedition instances.",
+	"bases": ["nms"]
+}

@@ -1,0 +1,6 @@
+{
+	"name": "pet-power",
+	"title": "Excess pet power",
+	"description": "Pet power above the strongest pets table row for a pet type keeps working: the excess scales that pet's hit points, armor class, damage, size and level, as a -1 row does.",
+	"bases": ["eqemu", "nms"]
+}
