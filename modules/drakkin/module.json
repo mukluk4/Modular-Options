@@ -1,0 +1,6 @@
+{
+	"name": "drakkin",
+	"title": "Drakkin in Freeport",
+	"description": "Drakkin as a playable race on NMS, with Human classes and deities, starting in Freeport.",
+	"bases": ["nms"]
+}

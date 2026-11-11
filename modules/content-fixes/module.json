@@ -1,0 +1,6 @@
+{
+	"name": "content-fixes",
+	"title": "Content fixes",
+	"description": "Database and quest fixes to game content: AA spells kept out of spell books, a softer open-world Lord Inquisitor Seru, 1 copper prices on unpriced drops, all-class items, Bazaar tradeskill stations, and on NMS the High Inquisitor Xeru bonus boss, Echo of Sebilis removed, Echo spells kept out of books and Echo of the Past NPCs moved to the zone-in point.",
+	"bases": ["eqemu", "nms"]
+}

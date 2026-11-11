@@ -1,0 +1,6 @@
+{
+	"name": "no-level-reqs",
+	"title": "No item level requirements",
+	"description": "Every item usable at any level: required and recommended item levels cleared. Database only.",
+	"bases": ["eqemu", "nms"]
+}
