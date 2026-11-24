@@ -1,0 +1,455 @@
+diff --git a/zone/bonuses.cpp b/zone/bonuses.cpp
+index be300a6f..475c1454 100644
+--- a/zone/bonuses.cpp
++++ b/zone/bonuses.cpp
+@@ -1893,6 +1893,11 @@ void Mob::CalcSpellBonuses(StatBonuses* newbon)
+ 	int buff_count = GetMaxTotalSlots();
+ 	for (i = 0; i < buff_count; i++) {
+ 		if (IsValidSpell(buffs[i].spellid)) {
++			// Vault Resonance carries the folded vault clickies' bonuses (zone/nms_vault.cpp)
++			if (IsClient() && NmsVaultIsResonanceSpell(buffs[i].spellid)) {
++				NmsVaultResonanceBonuses(CastToClient(), newbon, i);
++				continue;
++			}
+ 			ApplySpellsBonuses(buffs[i].spellid, buffs[i].casterlevel, newbon, buffs[i].casterid, 0, buffs[i].ticsremaining, i, buffs[i].instrument_mod);
+ 
+ 			if (buffs[i].hit_number > 0) {
+diff --git a/zone/nms_vault.cpp b/zone/nms_vault.cpp
+index c2086250..0080f10d 100644
+--- a/zone/nms_vault.cpp
++++ b/zone/nms_vault.cpp
+@@ -19,6 +19,7 @@
+ #include "string_ids.h"
+ 
+ #include <fmt/format.h>
++#include <algorithm>
+ #include <unordered_map>
+ #include <vector>
+ 
+@@ -37,6 +38,12 @@ static bool NmsVaultCanEquip(Client *c, const T *item)
+ #endif
+ }
+ 
++#ifdef SE_DivineAura // NMS names spell effects SE_*; stock EQEmu moved them to SpellEffect::
++#define VAULT_RES_SE(name) SE_##name
++#else
++#define VAULT_RES_SE(name) SpellEffect::name
++#endif
++
+ namespace {
+ 	bool tables_checked = false;
+ 	bool tables_ready = false;
+@@ -58,6 +65,7 @@ namespace {
+ 		LockerModItem mods[4];
+ 		std::vector<uint32> clicky_items;
+ 		time_t next_clicky_check = 0;
++		std::vector<uint16> folded; // Vault Resonance: usable stat-only clicky spells, one each, vault order
+ 	};
+ 
+ 	std::unordered_map<uint32, LockerCache> locker_cache;
+@@ -346,6 +354,244 @@ namespace {
+ 		}
+ 	}
+ 
++	// ---- Vault Resonance (vault-resonance module, README.md) ----
++	// Every stat-only vault clicky is carried by one Vault Resonance buff instead of a buff each. Its
++	// bonuses are applied in Mob::CalcSpellBonuses (NmsVaultResonanceBonuses), stacking is checked against
++	// real buffs and the other folded spells with the stock CheckStackConflict, so only the strongest counts.
++
++	uint16 ResonanceSpellId()
++	{
++		return static_cast<uint16>(RuleI(Custom, VaultResonanceSpell));
++	}
++
++	// Off by rule, or the spell row isn't in the database yet (it ships with its client patch)
++	bool ResonanceOn()
++	{
++		return RuleB(Custom, VaultResonance) && ResonanceSpellId() != 0 && IsValidSpell(ResonanceSpellId());
++	}
++
++	// Allow-list: effects that work entirely through ApplySpellsBonuses and need no buff of their own.
++	// Anything not listed (movement, see invis, illusions, runes, procs, focus effects...) keeps a real buff.
++	bool IsResonanceStatEffect(uint16 spell_id, int i)
++	{
++		const auto &sp = spells[spell_id];
++		switch (sp.effect_id[i]) {
++			case VAULT_RES_SE(CurrentHP):
++			case VAULT_RES_SE(CurrentMana):
++			case VAULT_RES_SE(CurrentEndurance):
++				return sp.base_value[i] >= 0; // regen (applied by bonuses), never a drain
++			case VAULT_RES_SE(ArmorClass):
++			case VAULT_RES_SE(ATK):
++			case VAULT_RES_SE(STR):
++			case VAULT_RES_SE(DEX):
++			case VAULT_RES_SE(AGI):
++			case VAULT_RES_SE(STA):
++			case VAULT_RES_SE(INT):
++			case VAULT_RES_SE(WIS):
++			case VAULT_RES_SE(CHA):
++			case VAULT_RES_SE(AllStats):
++			case VAULT_RES_SE(AttackSpeed):
++			case VAULT_RES_SE(AttackSpeed2):
++			case VAULT_RES_SE(AttackSpeed3):
++			case VAULT_RES_SE(ResistFire):
++			case VAULT_RES_SE(ResistCold):
++			case VAULT_RES_SE(ResistPoison):
++			case VAULT_RES_SE(ResistDisease):
++			case VAULT_RES_SE(ResistMagic):
++			case VAULT_RES_SE(ResistCorruption):
++			case VAULT_RES_SE(ResistAll):
++			case VAULT_RES_SE(DamageShield):
++			case VAULT_RES_SE(TotalHP):
++			case VAULT_RES_SE(MaxHPChange):
++			case VAULT_RES_SE(ManaPool):
++			case VAULT_RES_SE(EndurancePool):
++			case VAULT_RES_SE(ManaRegen_v2):
++			case VAULT_RES_SE(CriticalHitChance):
++			case VAULT_RES_SE(CriticalSpellChance):
++			case VAULT_RES_SE(Accuracy):
++			case VAULT_RES_SE(AvoidMeleeChance):
++			case VAULT_RES_SE(MeleeMitigation):
++			case VAULT_RES_SE(StrikeThrough2):
++			case VAULT_RES_SE(DamageModifier):
++			case VAULT_RES_SE(SkillDamageAmount):
++			case VAULT_RES_SE(StackingCommand_Block):
++			case VAULT_RES_SE(StackingCommand_Overwrite):
++			case VAULT_RES_SE(Blank):
++				return true;
++			default:
++				return false;
++		}
++	}
++
++	bool IsFoldableSpell(uint16 spell_id)
++	{
++		if (!IsValidSpell(spell_id) || !IsPermanentVaultClicky(spell_id)) {
++			return false;
++		}
++		const auto &sp = spells[spell_id];
++		if (sp.short_buff_box || sp.hit_number > 0 || IsBardSong(spell_id)) {
++			return false;
++		}
++		bool any = false;
++		for (int i = 0; i < EFFECT_COUNT; ++i) {
++			if (IsBlankSpellEffect(spell_id, i)) {
++				continue;
++			}
++			if (!IsResonanceStatEffect(spell_id, i)) {
++				return false;
++			}
++			any = true;
++		}
++		return any;
++	}
++
++	bool FoldsIntoResonance(uint16 spell_id)
++	{
++		return ResonanceOn() && IsFoldableSpell(spell_id);
++	}
++
++	std::vector<uint16> BuildFolded(Client *c, const std::vector<uint32> &clicky_items)
++	{
++		std::vector<uint16> folded;
++		if (!ResonanceOn()) {
++			return folded;
++		}
++		for (const auto item_id : clicky_items) {
++			const auto *item = database.GetItem(item_id);
++			if (!CanUseVaultClicky(c, item)) {
++				continue;
++			}
++			const auto spell_id = static_cast<uint16>(item->Click.Effect);
++			if (IsFoldableSpell(spell_id) && std::find(folded.begin(), folded.end(), spell_id) == folded.end()) {
++				folded.push_back(spell_id);
++			}
++		}
++		return folded;
++	}
++
++	int FindResonanceSlot(Client *c)
++	{
++		const uint16 res = ResonanceSpellId();
++		auto *buffs = c->GetBuffs();
++		const int buff_count = c->GetMaxTotalSlots();
++		for (int slot = 0; slot < buff_count; ++slot) {
++			if (buffs[slot].spellid == res) {
++				return slot;
++			}
++		}
++		return -1;
++	}
++
++	// The folded spells that count right now: not beaten by a real buff (the same spell as a real buff counts
++	// once, through that buff), and among themselves only the winner of each stacking conflict.
++	std::vector<uint16> ResonanceActive(Client *c, const std::vector<uint16> &folded, int res_slot)
++	{
++		std::vector<uint16> active;
++		auto *buffs = c->GetBuffs();
++		const int buff_count = c->GetMaxTotalSlots();
++		const uint16 res = ResonanceSpellId();
++
++		for (const auto spell_id : folded) {
++			const int level = c->GetCasterLevel(spell_id);
++
++			bool blocked = false;
++			for (int slot = 0; slot < buff_count && !blocked; ++slot) {
++				const uint16 buff_spell = buffs[slot].spellid;
++				if (slot == res_slot || buff_spell == res || !IsValidSpell(buff_spell)) {
++					continue;
++				}
++				blocked = buff_spell == spell_id ||
++					c->CheckStackConflict(buff_spell, buffs[slot].casterlevel, spell_id, level, nullptr, c, slot) == -1;
++			}
++			if (blocked) {
++				continue;
++			}
++
++			bool keep = true;
++			for (auto it = active.begin(); it != active.end();) {
++				const int ret = c->CheckStackConflict(*it, c->GetCasterLevel(*it), spell_id, level, c, c, res_slot);
++				if (ret == -1) {
++					keep = false;
++					break;
++				}
++				if (ret == 1) {
++					it = active.erase(it); // the new one is stronger
++					continue;
++				}
++				++it;
++			}
++			if (keep) {
++				active.push_back(spell_id);
++			}
++		}
++		return active;
++	}
++
++	// Keeps the one buff in step with the folded list: fades the vault's old separate copies of folded
++	// spells and any weaker real buff a folded spell beats (a separate vault buff would have overwritten
++	// it), adds Vault Resonance when something folds and removes it when nothing does.
++	void ResonanceSync(Client *c, bool recalc)
++	{
++		if (!c) {
++			return;
++		}
++		std::vector<uint16> folded;
++		auto cached = locker_cache.find(c->CharacterID());
++		if (cached != locker_cache.end() && ResonanceOn()) {
++			folded = cached->second.folded;
++		}
++
++		int res_slot = ResonanceSpellId() ? FindResonanceSlot(c) : -1;
++		if (folded.empty()) {
++			if (res_slot >= 0) {
++				c->BuffFadeBySlot(res_slot);
++			}
++			return;
++		}
++
++		const int before = c->GetBuffs() ? c->GetMaxTotalSlots() : 0;
++		int faded = 0;
++		for (const auto spell_id : folded) {
++			auto *b = c->GetBuffs();
++			for (int slot = 0; slot < before; ++slot) {
++				if (b[slot].spellid == spell_id && b[slot].ticsremaining == PERMANENT_BUFF_DURATION) {
++					c->BuffFadeBySlot(slot, false); // the vault's old separate copy (changeover)
++					++faded;
++					break;
++				}
++			}
++		}
++		if (faded) {
++			res_slot = FindResonanceSlot(c);
++		}
++
++		auto *buffs = c->GetBuffs();
++		const int buff_count = c->GetMaxTotalSlots();
++		for (const auto spell_id : ResonanceActive(c, folded, res_slot)) {
++			const int level = c->GetCasterLevel(spell_id);
++			for (int slot = 0; slot < buff_count; ++slot) {
++				const uint16 buff_spell = buffs[slot].spellid;
++				if (slot == res_slot || buff_spell == ResonanceSpellId() || buff_spell == spell_id ||
++					!IsValidSpell(buff_spell) || !IsBeneficialSpell(buff_spell)) {
++					continue;
++				}
++				if (c->CheckStackConflict(buff_spell, buffs[slot].casterlevel, spell_id, level, nullptr, c, slot) == 1) {
++					LogSpells("Vault Resonance: [{}] beats [{}] in slot [{}], fading it", spell_id, buff_spell, slot);
++					c->BuffFadeBySlot(slot, false);
++					++faded;
++				}
++			}
++		}
++
++		if (FindResonanceSlot(c) < 0) {
++			c->ApplySpellBuff(ResonanceSpellId(), PERMANENT_BUFF_DURATION);
++			recalc = true;
++		}
++		if (recalc || faded) {
++			c->CalcBonuses();
++		}
++	}
++
+ 	void ApplyVaultClicky(Client *c, const EQ::ItemData *item)
+ 	{
+ 		if (!CanUseVaultClicky(c, item)) {
+@@ -355,6 +601,9 @@ namespace {
+ 			return;
+ 		}
+ 		const auto spell_id = static_cast<uint16>(item->Click.Effect);
++		if (FoldsIntoResonance(spell_id)) {
++			return; // carried by Vault Resonance (ResonanceSync)
++		}
+ 		if (IsPermanentVaultClicky(spell_id)) {
+ 			KeepVaultClickyBuff(c, spell_id);
+ 		} else {
+@@ -749,6 +998,7 @@ namespace {
+ 			c->CalcBonuses();
+ 		}
+ 		FadeClickySpells(c, fade_spells);
++		ResonanceSync(c, slot >= NMS_VAULT_CLICKY_BEGIN && slot <= NMS_VAULT_CLICKY_END);
+ 	}
+ 
+ 	void DepopVaultMerchant(Client *c)
+@@ -924,6 +1174,7 @@ void NmsVaultRefreshCache(Client *c)
+ 			cache.clicky_items.push_back(row.item_id);
+ 		}
+ 	}
++	cache.folded = BuildFolded(c, cache.clicky_items);
+ 	locker_cache[c->CharacterID()] = cache;
+ }
+ 
+@@ -1633,6 +1884,7 @@ void NmsVaultApplyClickies(Client *c)
+ 			ApplyVaultClicky(c, database.GetItem(inner.item_id));
+ 		}
+ 	}
++	ResonanceSync(c, true);
+ }
+ 
+ // Runs on the client's buff tic. Brings back vault clicky buffs lost to a dispel or death, and
+@@ -1654,10 +1906,12 @@ void NmsVaultKeepClickies(Client *c)
+ 
+ 	for (const auto item_id : cached->second.clicky_items) {
+ 		const auto *item = database.GetItem(item_id);
+-		if (CanUseVaultClicky(c, item) && IsPermanentVaultClicky(static_cast<uint16>(item->Click.Effect))) {
++		if (CanUseVaultClicky(c, item) && IsPermanentVaultClicky(static_cast<uint16>(item->Click.Effect)) &&
++			!FoldsIntoResonance(static_cast<uint16>(item->Click.Effect))) {
+ 			KeepVaultClickyBuff(c, static_cast<uint16>(item->Click.Effect));
+ 		}
+ 	}
++	ResonanceSync(c, false); // brings Vault Resonance back after a death or a click-off
+ }
+ 
+ void NmsVaultOnZoneIn(Client *c)
+@@ -2093,3 +2347,55 @@ int NmsVaultLockerFocusList(Client *c, const EQ::ItemData **out, int max)
+ 	}
+ 	return count;
+ }
++
++// ---- Vault Resonance, called from the spell code ----
++
++bool NmsVaultIsResonanceSpell(uint16 spell_id)
++{
++	return spell_id != 0 && spell_id == ResonanceSpellId() && IsValidSpell(spell_id);
++}
++
++// Mob::CalcSpellBonuses, for the Vault Resonance slot: every folded spell that counts right now, as if it
++// were its own buff
++void NmsVaultResonanceBonuses(Client *c, StatBonuses *b, int slot)
++{
++	if (!c || !b || !ResonanceOn()) {
++		return;
++	}
++	auto cached = locker_cache.find(c->CharacterID());
++	if (cached == locker_cache.end() || cached->second.folded.empty()) {
++		return;
++	}
++	for (const auto spell_id : ResonanceActive(c, cached->second.folded, slot)) {
++		c->ApplySpellsBonuses(spell_id, static_cast<uint8>(c->GetCasterLevel(spell_id)), b, c->GetID(), 0,
++			PERMANENT_BUFF_DURATION, slot);
++	}
++}
++
++// Mob::AddBuff / CanBuffStack: true when a folded spell that counts beats the incoming buff, so a weaker
++// buff doesn't take hold, exactly as if the vault spell were its own buff. The same spell is let through:
++// it lands, and the folded copy steps aside while it lasts.
++bool NmsVaultResonanceBlocks(Client *c, uint16 spell_id, int caster_level)
++{
++	if (!c || !ResonanceOn() || spell_id == ResonanceSpellId() || !IsValidSpell(spell_id) ||
++		!IsBeneficialSpell(spell_id)) {
++		return false;
++	}
++	auto cached = locker_cache.find(c->CharacterID());
++	if (cached == locker_cache.end() || cached->second.folded.empty()) {
++		return false;
++	}
++	const int res_slot = FindResonanceSlot(c);
++	if (res_slot < 0) {
++		return false;
++	}
++	for (const auto folded : ResonanceActive(c, cached->second.folded, res_slot)) {
++		if (folded == spell_id) {
++			continue;
++		}
++		if (c->CheckStackConflict(folded, c->GetCasterLevel(folded), spell_id, caster_level, c, nullptr, res_slot) == -1) {
++			return true;
++		}
++	}
++	return false;
++}
+diff --git a/zone/nms_vault.h b/zone/nms_vault.h
+index 5ee6a62c..e1955da7 100644
+--- a/zone/nms_vault.h
++++ b/zone/nms_vault.h
+@@ -80,6 +80,11 @@ bool NmsVaultBankAccess(Client *c);
+ bool NmsVaultIsMerchant(Client *c, uint16 entity_id);
+ void NmsVaultApplyModBonuses(Client *c, StatBonuses *b);
+ int NmsVaultLockerFocusList(Client *c, const EQ::ItemData **out, int max);
++
++// Vault Resonance (vault-resonance module): one buff slot carries every stat-only vault clicky
++bool NmsVaultIsResonanceSpell(uint16 spell_id);
++void NmsVaultResonanceBonuses(Client *c, StatBonuses *b, int slot);
++bool NmsVaultResonanceBlocks(Client *c, uint16 spell_id, int caster_level);
+ int NmsVaultTryDepositInstance(Client *c, EQ::ItemInstance *inst);
+ 
+ #endif
+diff --git a/zone/spells.cpp b/zone/spells.cpp
+index 0ba51857..b7ee9198 100644
+--- a/zone/spells.cpp
++++ b/zone/spells.cpp
+@@ -83,6 +83,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
+ #include "../common/data_bucket.h"
+ #include "quest_parser_collection.h"
+ #include "string_ids.h"
++#include "nms_vault.h"
+ #include "worldserver.h"
+ #include "fastmath.h"
+ #include "lua_parser.h"
+@@ -3937,6 +3938,16 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
+ 	LogSpells("Trying to add buff [{}] cast by [{}] (cast level [{}]) with duration [{}]",
+ 		spell_id, caster?caster->GetName():"UNKNOWN", caster_level, duration);
+ 
++	// A stronger folded vault clicky (Vault Resonance, zone/nms_vault.cpp) blocks it like a real buff would
++	if (IsClient() && NmsVaultResonanceBlocks(CastToClient(), spell_id, caster_level)) {
++		LogSpells("Adding buff [{}] failed: blocked by a Vault Resonance spell", spell_id);
++		if (caster && caster->IsClient() && RuleB(Client, UseLiveBlockedMessage) && caster->GetClass() != Class::Bard) {
++			caster->Message(Chat::Red, fmt::format("Your {} did not take hold on {}. (Blocked by {}.)",
++				spells[spell_id].name, GetName(), spells[RuleI(Custom, VaultResonanceSpell)].name).c_str());
++		}
++		return -1;
++	}
++
+ 	// first we loop through everything checking that the spell
+ 	// can stack with everything. this is to avoid stripping the spells
+ 	// it would overwrite, and then hitting a buff we can't stack with.
+@@ -4208,6 +4219,11 @@ int Mob::CanBuffStack(uint16 spellid, uint8 caster_level, bool iFailIfOverwrite)
+ 
+ 	LogAIDetail("Checking if buff [{}] cast at level [{}] can stack on me.[{}]", spellid, caster_level, iFailIfOverwrite?" failing if we would overwrite something":"");
+ 
++	// A stronger folded vault clicky (Vault Resonance) blocks it like a real buff would
++	if (IsClient() && NmsVaultResonanceBlocks(CastToClient(), spellid, caster_level)) {
++		return -1;
++	}
++
+ 	int buff_count = GetMaxTotalSlots();
+ 	for (i=0; i < buff_count; i++)
+ 	{

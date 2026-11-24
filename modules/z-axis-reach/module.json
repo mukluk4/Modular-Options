@@ -1,0 +1,6 @@
+{
+	"name": "z-axis-reach",
+	"title": "Vertical reach for melee and aggro",
+	"description": "Melee and proximity aggro stop ignoring height: a target too far above or below is out of melee range and isn't noticed, so a mob on a ledge or the floor above no longer hits or aggros through it. Two rules set the reach; 0 turns each off.",
+	"bases": ["eqemu", "nms"]
+}

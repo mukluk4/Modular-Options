@@ -1,0 +1,83 @@
+diff --git a/common/ruletypes.h b/common/ruletypes.h
+index 170c62e96..7f81c4fc3 100644
+--- a/common/ruletypes.h
++++ b/common/ruletypes.h
+@@ -609,6 +609,7 @@ RULE_INT(Combat, NPCAssistCapTimer, 6000, "Time a NPC will take to clear assist
+ RULE_BOOL(Combat, UseRevampHandToHand, false, "Use h2h revamped dmg/delays I believe this was implemented during SoF")
+ RULE_BOOL(Combat, ClassicMasterWu, false, "Classic Master Wu uses a random special, modern doesn't")
+ RULE_REAL(Combat, HitBoxMod, 1.00, "Added to test hit boxes.")
++RULE_REAL(Combat, MeleeZReach, 15.0, "Melee and AE rampage fail when the feet-to-feet height gap is over this plus the bigger combatant's size. 0 = off (stock: height ignored)")
+ RULE_INT(Combat, LevelToStopDamageCaps, 0, "Level to stop damage caps. 1 will effectively disable them, 20 should give basically same results as old incorrect system")
+ RULE_INT(Combat, LevelToStopACTwinkControl, 50, "Level to stop armorclass twink control. 1 will effectively disable it, 50 should give basically same results as current system")
+ RULE_BOOL(Combat, ClassicNPCBackstab, false, "True disables NPC facestab - NPC get normal attack if not behind")
+@@ -711,6 +712,7 @@ RULE_CATEGORY_END()
+ RULE_CATEGORY(Aggro)
+ RULE_BOOL(Aggro, SmartAggroList, true, "Smart aggro list attempts to choose targets in a much smarter fashion, prefering players to pets, sitting and critically injured players to normal players, and players in melee range to players not")
+ RULE_INT(Aggro, SittingAggroMod, 35, "Aggro increase against sitting targets. 35=35%")
++RULE_REAL(Aggro, MaxZDiff, 35.0, "NPCs don't proximity aggro a target whose feet-to-feet height gap is over this plus the bigger one's size. 0 = off (stock: the aggro radius)")
+ RULE_INT(Aggro, MeleeRangeAggroMod, 10, "Aggro increase against targets in melee range. 10=10%")
+ RULE_INT(Aggro, CurrentTargetAggroMod, 0, "Aggro increase against current target. 0% = prefer the current target to any other. Makes it harder for our NPC to switch targets")
+ RULE_INT(Aggro, CriticallyWoundedAggroMod, 100, "Aggro increase against critical wounded targets")
+diff --git a/zone/aggro.cpp b/zone/aggro.cpp
+index 0b51fbc11..8de7703fd 100644
+--- a/zone/aggro.cpp
++++ b/zone/aggro.cpp
+@@ -131,6 +131,19 @@ void EntityList::DescribeAggro(Client *to_who, NPC *from_who, float d, bool verb
+ 	}
+ }
+ 
++// Vertical reach (z-axis-reach module): melee and aggro ignored height, so a mob on a ledge or the floor above could hit or
++// notice you. The gap is measured feet to feet (z less the model's z offset) and may be at most base + the bigger
++// of the two sizes, so large models still reach further. A base of 0 or less turns it off.
++static bool WithinZReach(const Mob *a, const Mob *b, float base, float size_a, float size_b)
++{
++	if (base <= 0.0f) {
++		return true;
++	}
++
++	const float gap = std::abs((a->GetZ() - a->GetZOffset()) - (b->GetZ() - b->GetZOffset()));
++	return gap <= base + std::max(size_a, size_b);
++}
++
+ void NPC::DescribeAggro(Client *to_who, Mob *mob, bool verbose) {
+ 	//this logic is duplicated from below, try to keep it up to date.
+ 	float aggro_range = GetAggroRange();
+@@ -156,6 +169,18 @@ void NPC::DescribeAggro(Client *to_who, Mob *mob, bool verbose) {
+ 		return;
+ 	}
+ 
++	if (!WithinZReach(this, mob, RuleR(Aggro, MaxZDiff), GetSize(), mob->GetSize())) {
++		to_who->Message(
++			Chat::White,
++			fmt::format(
++				"{} is on a different level (more than {} feet above or below, feet to feet).",
++				to_who->GetTargetDescription(mob),
++				RuleR(Aggro, MaxZDiff) + std::max(GetSize(), mob->GetSize())
++			).c_str()
++		);
++		return;
++	}
++
+ 	if (mob->IsInvisible(this)) {
+ 		to_who->Message(
+ 			Chat::White,
+@@ -428,6 +453,7 @@ bool Mob::CheckWillAggro(Mob *mob) {
+ 		x_range > aggro_range ||
+ 		y_range > aggro_range ||
+ 		z_range > aggro_range ||
++		!WithinZReach(this, mob, RuleR(Aggro, MaxZDiff), GetSize(), mob->GetSize()) ||
+ 		mob->IsInvisible(this) ||
+ 		(
+ 			mob->IsClient() &&
+@@ -1136,6 +1162,11 @@ bool Mob::CombatRange(Mob* other, float fixed_size_mod, bool aeRampage, ExtraAtt
+ 		size_mod = other_size_mod;
+ 	}
+ 
++	// Vertical reach: a target too far above or below is out of melee (and AE rampage) range, line of sight or not
++	if (!WithinZReach(this, other, RuleR(Combat, MeleeZReach), size_mod, size_mod)) {
++		return false;
++	}
++
+ 	// this could still use some work, but for now it's an improvement....
+ 
+ 	if (size_mod > 29) {

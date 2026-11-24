@@ -9,7 +9,10 @@ opens the vault window. The vault holds:
   hand.
 - **Mod slots** (84-87): items there lend their skill mods, instrument mods and focus effects, never stats or procs.
 - **Clicky slots** (61-80): clicky buffs from items there are kept up while the item stays in the vault. Invisibility,
-  Divine Aura and disciplines are skipped so they never interrupt you.
+  Divine Aura and disciplines are skipped so they never interrupt you. A clicky only works for a character who meets
+  its required level and has one of its classes (on NMS, any of a multiclass character's classes), whatever the click
+  type; a vault buff from a clicky the character can't use fades on the next zone-in. The `vault-resonance` module can
+  fold the stat-only ones into a single buff.
 
 Items keep their full state through the vault: attunement, ornaments, augments, custom data (such as dynamic item
 seeds) and their unique ID.

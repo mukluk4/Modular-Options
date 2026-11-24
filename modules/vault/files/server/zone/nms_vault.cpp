@@ -263,20 +263,28 @@ namespace {
 	// level-1 character could park a bag of raid clickies and have them all re-applied on
 	// every zone-in.
 	//
-	// The two gates are deliberately different, because EQ treats these item effects
-	// differently and a blanket equip check would remove intended behaviour:
+	// Gates:
 	//   - Required level applies to everything. Stock gates item clicks on Click.Level2
 	//     (client_packet.cpp:4725-4727, :10048); a vault clicky is not a way around it.
-	//   - Class/race equipability applies ONLY to EquipClick items, whose effect exists
-	//     solely because the item is worn. A plain inventory clicky (Click / Click2) is
-	//     usable from a bag by classes that could never equip it, which is normal EQ
-	//     behaviour and stays allowed.
+	//   - Class applies to every clicky type: the vault never casts another class's clicky,
+	//     even a plain inventory one (Click / Click2) that stock EQ would let any class click
+	//     from a bag. On NMS a multiclass character passes on any of their classes.
+	//   - Race as well applies to EquipClick items, whose effect exists solely because the
+	//     item is worn.
 	bool CanUseVaultClicky(Client *c, const EQ::ItemData *item)
 	{
 		if (!c || !IsVaultClicky(item)) {
 			return false;
 		}
 		if (item->Click.Level2 > 0 && c->GetLevel() < item->Click.Level2) {
+			return false;
+		}
+#ifdef EQMOD_BASE_NMS
+		const auto classes = static_cast<uint16>(c->GetClassesBits());
+#else
+		const auto classes = GetPlayerClassBit(c->GetClass());
+#endif
+		if ((item->Classes & classes) == 0) {
 			return false;
 		}
 		if (item->Click.Type == EQ::item::ItemEffectEquipClick
@@ -323,9 +331,27 @@ namespace {
 		}
 	}
 
+	// A clicky the character may no longer use (the class gate came in after it was stored)
+	// loses the permanent buff the vault gave it. Only a permanent copy goes: the same spell
+	// cast normally, by the player or anyone else, has a real duration and is left alone.
+	void DropVaultClickyBuff(Client *c, uint16 spell_id)
+	{
+		auto *buffs = c->GetBuffs();
+		const int buff_count = c->GetMaxTotalSlots();
+		for (int slot = 0; slot < buff_count; ++slot) {
+			if (buffs[slot].spellid == spell_id && buffs[slot].ticsremaining == PERMANENT_BUFF_DURATION) {
+				c->BuffFadeBySlot(slot);
+				return;
+			}
+		}
+	}
+
 	void ApplyVaultClicky(Client *c, const EQ::ItemData *item)
 	{
 		if (!CanUseVaultClicky(c, item)) {
+			if (c && IsVaultClicky(item) && IsPermanentVaultClicky(static_cast<uint16>(item->Click.Effect))) {
+				DropVaultClickyBuff(c, static_cast<uint16>(item->Click.Effect));
+			}
 			return;
 		}
 		const auto spell_id = static_cast<uint16>(item->Click.Effect);

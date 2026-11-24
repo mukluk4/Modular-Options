@@ -1,0 +1,7 @@
+{
+	"name": "vault-resonance",
+	"title": "Vault Resonance",
+	"description": "Stat-only clicky buffs kept up by the Nautilus Vault share one Vault Resonance buff slot instead of taking a buff slot each. Only the strongest copy of each stat counts, exactly as if each were its own buff.",
+	"bases": ["eqemu", "nms"],
+	"requires": ["vault"]
+}
